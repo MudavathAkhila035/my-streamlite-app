@@ -420,16 +420,225 @@ elif module == "4. Site Zoning & Distribution":
 
 
 # ----------------------------------------------------
-# MODULE 5: REPORT GENERATOR
+# MODULE 5: SUN PATH & ORIENTATION
 # ----------------------------------------------------
-elif module == "5. Report Generator":
-    st.markdown("## Module 5: Professional Report Generator")
-    st.write("Compile project details, site calculations, area statements, parking summaries, site zoning, and orientation analysis into a professional downloadable CSV summary or formatted report.")
 
-    if st.button("📥 Export Complete Room Schedule & Data (CSV)"):
-        rooms_df = pd.DataFrame(st.session_state.rooms)
-        rooms_df["Total Area"] = rooms_df["count"] * rooms_df["unit_area"]
-        csv_data = rooms_df.to_csv(index=False).encode('utf-8')
-        st.download_button("Download CSV Schedule", data=csv_data, file_name="archi_planner_full_schedule.csv", mime="text/csv")
+elif module == "5. Sun Path & Orientation":
 
-    st.info("💡 **Tip:** You can also export individual module tables and diagrams directly from Modules 2, 3, and 4.")
+    st.markdown("## Module 5: Sun Path & Orientation Analysis")
+    st.write("Study approximate solar position, building orientation and shadow length.")
+
+    o = st.session_state.orientation
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        latitude = st.number_input(
+            "Latitude (degrees)",
+            min_value=-90.0,
+            max_value=90.0,
+            value=float(o["latitude"])
+        )
+
+        longitude = st.number_input(
+            "Longitude (degrees)",
+            min_value=-180.0,
+            max_value=180.0,
+            value=float(o["longitude"])
+        )
+
+        orientation_angle = st.number_input(
+            "Building Orientation Angle (degrees)",
+            min_value=0.0,
+            max_value=360.0,
+            value=float(o["orientation_angle"])
+        )
+
+    with col2:
+        selected_date = st.date_input(
+            "Select Date",
+            value=pd.to_datetime(o["date"]).date()
+        )
+
+        selected_time = st.time_input(
+            "Select Local Time",
+            value=pd.to_datetime(o["time"]).time()
+        )
+
+        building_height = st.number_input(
+            "Building Height (m)",
+            min_value=1.0,
+            max_value=500.0,
+            value=float(o["building_height"])
+        )
+
+    st.session_state.orientation.update({
+        "latitude": latitude,
+        "longitude": longitude,
+        "orientation_angle": orientation_angle,
+        "date": str(selected_date),
+        "time": str(selected_time),
+        "building_height": building_height
+    })
+
+    # Approximate solar position calculation
+    day_number = selected_date.timetuple().tm_yday
+
+    B = 2 * np.pi * (day_number - 81) / 364
+
+    declination = 23.45 * np.sin(
+        np.deg2rad(360 * (284 + day_number) / 365)
+    )
+
+    equation_of_time = (
+        9.87 * np.sin(2 * B)
+        - 7.53 * np.cos(B)
+        - 1.5 * np.sin(B)
+    )
+
+    clock_minutes = (
+        selected_time.hour * 60
+        + selected_time.minute
+    )
+
+    solar_minutes = (
+        clock_minutes
+        + equation_of_time
+        + 4 * (longitude - 82.5)
+    )
+
+    solar_hour = solar_minutes / 60
+    hour_angle = 15 * (solar_hour - 12)
+
+    lat_rad = np.deg2rad(latitude)
+    dec_rad = np.deg2rad(declination)
+    ha_rad = np.deg2rad(hour_angle)
+
+    altitude_value = np.arcsin(
+        np.sin(lat_rad) * np.sin(dec_rad)
+        + np.cos(lat_rad) * np.cos(dec_rad) * np.cos(ha_rad)
+    )
+
+    solar_altitude = np.rad2deg(altitude_value)
+
+    azimuth = (
+        np.rad2deg(
+            np.arctan2(
+                np.sin(ha_rad),
+                np.cos(ha_rad) * np.sin(lat_rad)
+                - np.tan(dec_rad) * np.cos(lat_rad)
+            )
+        ) + 180
+    ) % 360
+
+    st.markdown("---")
+    st.markdown("### Solar Analysis Results")
+
+    m1, m2, m3 = st.columns(3)
+
+    m1.metric("Solar Altitude", f"{solar_altitude:.2f}°")
+    m2.metric("Solar Azimuth", f"{azimuth:.2f}°")
+    m3.metric("Building Orientation", f"{orientation_angle:.1f}°")
+
+    if solar_altitude > 0:
+        shadow_length = building_height / np.tan(altitude_value)
+        st.metric("Approximate Shadow Length", f"{shadow_length:.2f} m")
+    else:
+        st.warning("The sun is below the horizon at this selected time.")
+
+    st.markdown("### Architectural Recommendations")
+
+    st.write("""
+    - Study east and west facades for low-angle morning and evening sun.
+    - Use suitable shading devices on exposed facades.
+    - Consider daylight availability when positioning major spaces.
+    - Use the solar altitude and azimuth as preliminary design inputs.
+    """)
+
+    st.info(
+        "These are approximate solar calculations, not a certified "
+        "solar simulation. Verify detailed design with a solar analysis tool."
+    )
+
+
+# ----------------------------------------------------
+# MODULE 6: REPORT GENERATOR
+# ----------------------------------------------------
+
+elif module == "6. Report Generator":
+
+    st.markdown("## Module 6: Architectural Report Generator")
+
+    st.write(
+        "Combine project information, area statement, parking, "
+        "zoning and solar analysis into an Excel report."
+    )
+
+    p = st.session_state.project_info
+    rooms_df = pd.DataFrame(st.session_state.rooms)
+
+    rooms_df["Total Area"] = (
+        rooms_df["count"] * rooms_df["unit_area"]
+    )
+
+    parking = st.session_state.parking
+    zoning = st.session_state.zoning
+    orientation = st.session_state.orientation
+
+    project_df = pd.DataFrame([p])
+    parking_df = pd.DataFrame([parking])
+    zoning_df = pd.DataFrame([zoning])
+    orientation_df = pd.DataFrame([orientation])
+
+    st.markdown("### Project Summary")
+
+    st.write(f"**Project:** {p['name']}")
+    st.write(f"**Location:** {p['location']}")
+    st.write(
+        f"**Site Area:** "
+        f"{p['site_length'] * p['site_width']:.2f} m²"
+    )
+
+    st.markdown("### Area Statement Preview")
+    st.dataframe(rooms_df, use_container_width=True)
+
+    total_area = rooms_df["Total Area"].sum()
+    st.metric("Total Programmed Area", f"{total_area:.2f} m²")
+
+    st.markdown("### Export Complete Project Report")
+
+    excel_buffer = io.BytesIO()
+
+    with pd.ExcelWriter(
+        excel_buffer,
+        engine="openpyxl"
+    ) as writer:
+
+        project_df.to_excel(
+            writer, sheet_name="Project Details", index=False
+        )
+
+        rooms_df.to_excel(
+            writer, sheet_name="Area Statement", index=False
+        )
+
+        parking_df.to_excel(
+            writer, sheet_name="Parking", index=False
+        )
+
+        zoning_df.to_excel(
+            writer, sheet_name="Site Zoning", index=False
+        )
+
+        orientation_df.to_excel(
+            writer, sheet_name="Sun Orientation", index=False
+        )
+
+    st.download_button(
+        label="Download Complete Excel Report",
+        data=excel_buffer.getvalue(),
+        file_name="ARCHI_PLANNER_Report.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    st.success("Your project report is ready to download.")
