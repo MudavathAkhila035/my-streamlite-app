@@ -1,5 +1,4 @@
-# Python dependencies
-streamlit>=1.32.0
-pandas>=2.0.0
-matplotlib>=3.7.0
-numpy>=1.24.0
+streamlit==1.67.0
+pandas
+matplotlib
+numpy
