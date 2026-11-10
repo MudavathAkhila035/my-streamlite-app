@@ -167,73 +167,402 @@ if module == "Dashboard":
         max_allowable = (p['site_length'] * p['site_width']) * (p['ground_coverage_pct'] / 100.0) * p['num_floors']
         
         st.metric("Total Programmed Area", f"{total_prog_area:.1f} m²", f"Max Permissible: {max_allowable:.1f} m²")
-
+        
 # ----------------------------------------------------
 # MODULE 1: SITE AREA CALCULATOR
 # ----------------------------------------------------
 elif module == "1. Site Area Calculator":
+
     st.markdown("## Module 1: Site Area & Building Envelope Calculator")
-    st.write("Configure site boundaries, setbacks, development controls (FSI/FAR), and ground coverage to determine permissible built-up envelopes.")
-    
+
+    st.write(
+        "Configure site boundaries, setbacks, development controls "
+        "(FSI/FAR), and ground coverage to determine the permissible "
+        "building envelope."
+    )
+
+    # ------------------------------------------------
+    # PROJECT AND SITE INPUTS
+    # ------------------------------------------------
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
+
         st.markdown("### Project & Site Inputs")
-        p_name = st.text_input("Project Name", st.session_state.project_info["name"])
-        p_loc = st.text_input("Project Location", st.session_state.project_info["location"])
-        
-        site_l = st.number_input("Site Length (m)", min_value=5.0, max_value=500.0, value=float(st.session_state.project_info["site_length"]))
-        site_w = st.number_input("Site Width (m)", min_value=5.0, max_value=500.0, value=float(st.session_state.project_info["site_width"]))
-        
+
+        p_name = st.text_input(
+            "Project Name",
+            st.session_state.project_info["name"],
+            key="m1_project_name"
+        )
+
+        p_loc = st.text_input(
+            "Project Location",
+            st.session_state.project_info["location"],
+            key="m1_project_location"
+        )
+
+        site_l = st.number_input(
+            "Site Length (m)",
+            min_value=5.0,
+            max_value=500.0,
+            value=float(st.session_state.project_info["site_length"]),
+            step=1.0,
+            key="m1_site_length"
+        )
+
+        site_w = st.number_input(
+            "Site Width (m)",
+            min_value=5.0,
+            max_value=500.0,
+            value=float(st.session_state.project_info["site_width"]),
+            step=1.0,
+            key="m1_site_width"
+        )
+
         st.markdown("### Setbacks (m)")
-        s_front = st.number_input("Front Setback", min_value=0.0, max_value=50.0, value=float(st.session_state.project_info["setback_front"]))
-        s_rear = st.number_input("Rear Setback", min_value=0.0, max_value=50.0, value=float(st.session_state.project_info["setback_rear"]))
-        s_side = st.number_input("Side Setback", min_value=0.0, max_value=50.0, value=float(st.session_state.project_info["setback_side"]))
+
+        s_front = st.number_input(
+            "Front Setback",
+            min_value=0.0,
+            max_value=50.0,
+            value=float(st.session_state.project_info["setback_front"]),
+            step=0.5,
+            key="m1_front"
+        )
+
+        s_rear = st.number_input(
+            "Rear Setback",
+            min_value=0.0,
+            max_value=50.0,
+            value=float(st.session_state.project_info["setback_rear"]),
+            step=0.5,
+            key="m1_rear"
+        )
+
+        s_side = st.number_input(
+            "Side Setback",
+            min_value=0.0,
+            max_value=50.0,
+            value=float(st.session_state.project_info["setback_side"]),
+            step=0.5,
+            key="m1_side"
+        )
+
+    # ------------------------------------------------
+    # DEVELOPMENT CONTROLS
+    # ------------------------------------------------
 
     with col2:
+
         st.markdown("### Development Controls")
-        fsi = st.number_input("Floor Area Ratio (FAR / FSI)", min_value=0.1, max_value=10.0, value=float(st.session_state.project_info["fsi"]), step=0.1)
-        gc_pct = st.number_input("Ground Coverage Percentage (%)", min_value=10.0, max_value=100.0, value=float(st.session_state.project_info["ground_coverage_pct"]))
-        floors = st.number_input("Number of Floors", min_value=1, max_value=50, value=int(st.session_state.project_info["num_floors"]))
-        
-        st.session_state.project_info.update({
-            "name": p_name,
-            "location": p_loc,
-            "site_length": site_l,
-            "site_width": site_w,
-            "setback_front": s_front,
-            "setback_rear": s_rear,
-            "setback_side": s_side,
-            "fsi": fsi,
-            "ground_coverage_pct": gc_pct,
-            "num_floors": floors
-        })
+
+        fsi = st.number_input(
+            "Floor Area Ratio (FAR / FSI)",
+            min_value=0.1,
+            max_value=10.0,
+            value=float(st.session_state.project_info["fsi"]),
+            step=0.1,
+            key="m1_fsi"
+        )
+
+        gc_pct = st.number_input(
+            "Ground Coverage Percentage (%)",
+            min_value=10.0,
+            max_value=100.0,
+            value=float(st.session_state.project_info["ground_coverage_pct"]),
+            step=1.0,
+            key="m1_coverage"
+        )
+
+        floors = st.number_input(
+            "Number of Floors",
+            min_value=1,
+            max_value=50,
+            value=int(st.session_state.project_info["num_floors"]),
+            step=1,
+            key="m1_floors"
+        )
+
+    # ------------------------------------------------
+    # SAVE PROJECT INPUTS
+    # ------------------------------------------------
+
+    st.session_state.project_info.update({
+
+        "name": p_name,
+        "location": p_loc,
+
+        "site_length": site_l,
+        "site_width": site_w,
+
+        "setback_front": s_front,
+        "setback_rear": s_rear,
+        "setback_side": s_side,
+
+        "fsi": fsi,
+        "ground_coverage_pct": gc_pct,
+        "num_floors": floors
+
+    })
 
     st.markdown("---")
+
+    # ------------------------------------------------
+    # AREA CALCULATIONS
+    # ------------------------------------------------
+
     st.markdown("### Calculated Results & Building Envelope")
-    
+
     total_plot_area = site_l * site_w
+
     permissible_fsi_area = total_plot_area * fsi
-    max_ground_coverage_area = total_plot_area * (gc_pct / 100.0)
-    
-    env_length = max(0.0, site_l - (s_front + s_rear))
-    env_width = max(0.0, site_w - (2 * s_side))
+
+    max_ground_coverage_area = (
+        total_plot_area * gc_pct / 100.0
+    )
+
+    # Building envelope after setbacks
+
+    env_length = max(
+        0.0,
+        site_l - s_front - s_rear
+    )
+
+    env_width = max(
+        0.0,
+        site_w - (2 * s_side)
+    )
+
     envelope_footprint = env_length * env_width
-    
-    avg_floor_area = permissible_fsi_area / floors if floors > 0 else 0
+
+    # Indicative average floor area
+
+    avg_floor_area = (
+        permissible_fsi_area / floors
+        if floors > 0 else 0
+    )
+
+    # ------------------------------------------------
+    # MAXIMUM PERMISSIBLE FOOTPRINT
+    # ------------------------------------------------
+
+    max_permissible_footprint = min(
+        max_ground_coverage_area,
+        envelope_footprint
+    )
+
+    # ------------------------------------------------
+    # PROPOSED BUILDING FOOTPRINT
+    # ------------------------------------------------
+
+    st.markdown("### Proposed Building Footprint")
+
+    st.caption(
+        "Enter the actual proposed ground-floor building area "
+        "to check ground coverage and setback compliance."
+    )
+
+    proposed_footprint = st.number_input(
+        "Proposed Building Footprint (m²)",
+        min_value=0.0,
+        max_value=float(total_plot_area),
+        value=float(max_permissible_footprint),
+        step=10.0,
+        key="m1_proposed_footprint"
+    )
+
+    # ------------------------------------------------
+    # COMPLIANCE CALCULATIONS
+    # ------------------------------------------------
+
+    coverage_compliant = (
+        proposed_footprint <= max_ground_coverage_area
+    )
+
+    setback_compliant = (
+        proposed_footprint <= envelope_footprint
+    )
+
+    overall_compliant = (
+        coverage_compliant and setback_compliant
+    )
+
+    excess_coverage = max(
+        0.0,
+        proposed_footprint - max_ground_coverage_area
+    )
+
+    excess_envelope = max(
+        0.0,
+        proposed_footprint - envelope_footprint
+    )
+
+    # ------------------------------------------------
+    # DISPLAY MAIN RESULTS
+    # ------------------------------------------------
 
     col_a, col_b, col_c, col_d = st.columns(4)
-    col_a.metric("Total Plot Area", f"{total_plot_area:.2f} m²")
-    col_b.metric("Permissible FSI Area", f"{permissible_fsi_area:.2f} m²")
-    col_c.metric("Max Ground Coverage", f"{max_ground_coverage_area:.2f} m²")
-    col_d.metric("Setback Footprint", f"{envelope_footprint:.2f} m²")
 
-    st.markdown(f"""
-    **Detailed Calculation Summary:**
-    - **Building Envelope Dimensions:** {env_length:.2f}m × {env_width:.2f}m (Length × Width after setbacks).
-    - **Indicative Average Floor Area:** {avg_floor_area:.2f} m² per floor across {floors} floors.
-    - **Regulatory Compliance Note:** Ground coverage footprint is {'WITHIN' if envelope_footprint <= max_ground_coverage_area else 'EXCEEDING'} the maximum permissible ground coverage limit.
-    """)
+    col_a.metric(
+        "Total Plot Area",
+        f"{total_plot_area:,.2f} m²"
+    )
+
+    col_b.metric(
+        "Permissible FSI Area",
+        f"{permissible_fsi_area:,.2f} m²"
+    )
+
+    col_c.metric(
+        "Max Ground Coverage",
+        f"{max_ground_coverage_area:,.2f} m²"
+    )
+
+    col_d.metric(
+        "Setback Footprint",
+        f"{envelope_footprint:,.2f} m²"
+    )
+
+    # ------------------------------------------------
+    # PERMISSIBLE BUILDING FOOTPRINT
+    # ------------------------------------------------
+
+    st.markdown("---")
+
+    st.markdown("### Maximum Permissible Building Footprint")
+
+    st.metric(
+        "Maximum Permissible Footprint",
+        f"{max_permissible_footprint:,.2f} m²"
+    )
+
+    # ------------------------------------------------
+    # DETAILED CALCULATION SUMMARY
+    # ------------------------------------------------
+
+    st.markdown("---")
+
+    st.markdown("### Detailed Calculation Summary")
+
+    summary_col1, summary_col2 = st.columns(2)
+
+    with summary_col1:
+
+        st.write(
+            f"**Building Envelope Dimensions:** "
+            f"{env_length:.2f} m × {env_width:.2f} m"
+        )
+
+        st.write(
+            f"**Setback Envelope Area:** "
+            f"{envelope_footprint:,.2f} m²"
+        )
+
+        st.write(
+            f"**Maximum Ground Coverage:** "
+            f"{max_ground_coverage_area:,.2f} m²"
+        )
+
+    with summary_col2:
+
+        st.write(
+            f"**Proposed Building Footprint:** "
+            f"{proposed_footprint:,.2f} m²"
+        )
+
+        st.write(
+            f"**Maximum Permissible Footprint:** "
+            f"{max_permissible_footprint:,.2f} m²"
+        )
+
+        st.write(
+            f"**Indicative Average Floor Area:** "
+            f"{avg_floor_area:,.2f} m² per floor "
+            f"across {int(floors)} floors"
+        )
+
+    # ------------------------------------------------
+    # REGULATORY COMPLIANCE STATUS
+    # ------------------------------------------------
+
+    st.markdown("---")
+
+    st.markdown("### Regulatory Compliance Check")
+
+    if overall_compliant:
+
+        st.success(
+            "PASS: Proposed building footprint is within "
+            "the calculated ground coverage and setback limits."
+        )
+
+        st.write(
+            f"Remaining ground coverage: "
+            f"{max_ground_coverage_area - proposed_footprint:.2f} m²"
+        )
+
+        st.write(
+            f"Remaining setback envelope: "
+            f"{envelope_footprint - proposed_footprint:.2f} m²"
+        )
+
+    else:
+
+        st.error(
+            "FAIL: Proposed building footprint exceeds "
+            "one or more calculated limits."
+        )
+
+        if not coverage_compliant:
+
+            st.warning(
+                f"Ground coverage exceeded by "
+                f"{excess_coverage:.2f} m²."
+            )
+
+        if not setback_compliant:
+
+            st.warning(
+                f"Setback envelope exceeded by "
+                f"{excess_envelope:.2f} m²."
+            )
+
+    # ------------------------------------------------
+    # ADDITIONAL VALIDATION
+    # ------------------------------------------------
+
+    st.markdown("---")
+
+    st.markdown("### Site Geometry Validation")
+
+    if env_length <= 0 or env_width <= 0:
+
+        st.error(
+            "Invalid building envelope. The selected setbacks "
+            "leave no available buildable dimensions."
+        )
+
+    elif envelope_footprint < proposed_footprint:
+
+        st.warning(
+            "The proposed building footprint is larger than "
+            "the available setback envelope."
+        )
+
+    else:
+
+        st.success(
+            "Site dimensions and setback envelope are geometrically valid."
+        )
+
+    st.caption(
+        "Note: These calculations are preliminary planning estimates. "
+        "Actual development permission must be verified against applicable "
+        "local building bye-laws, road width, height restrictions, "
+        "fire safety, parking and other regulatory requirements."
+    )
 
 # ----------------------------------------------------
 # MODULE 2: SPACE PLANNER & AREA STATEMENT
