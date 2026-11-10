@@ -685,7 +685,7 @@ elif module == "2. Space Planner & Area Statement":
         # ------------------------------------------
         if submitted:
 
-            r_name = r_name.strip()
+           r_name = " ".join(r_name.split())
 
             if not r_name:
                 st.error("Room name cannot be empty.")
