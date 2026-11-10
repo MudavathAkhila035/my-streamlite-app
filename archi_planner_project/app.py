@@ -566,11 +566,13 @@ elif module == "1. Site Area Calculator":
 
 # ----------------------------------------------------
 
+
 # MODULE 2: SPACE PLANNER & AREA STATEMENT
 # ----------------------------------------------------
 elif module == "2. Space Planner & Area Statement":
 
     st.markdown("## Module 2: Space Planner & Area Statement")
+
     st.write(
         "Manage architectural space programming, categorize zones, "
         "apply DSA sorting/searching, and compare with available built-up area."
@@ -579,6 +581,7 @@ elif module == "2. Space Planner & Area Statement":
     # ------------------------------------------
     # CURRENT AREA STATEMENT
     # ------------------------------------------
+
     rooms_df = pd.DataFrame(st.session_state.rooms)
 
     rooms_df["Total Area"] = (
@@ -605,6 +608,7 @@ elif module == "2. Space Planner & Area Statement":
     # ------------------------------------------
     # SEARCH FUNCTION
     # ------------------------------------------
+
     if search_query:
         rooms_df = rooms_df[
             rooms_df["name"].str.contains(
@@ -617,6 +621,7 @@ elif module == "2. Space Planner & Area Statement":
     # ------------------------------------------
     # SORTING FUNCTION
     # ------------------------------------------
+
     if "Descending" in sort_order:
         rooms_df = rooms_df.sort_values(
             by="Total Area",
@@ -631,6 +636,7 @@ elif module == "2. Space Planner & Area Statement":
     # ------------------------------------------
     # DISPLAY AREA STATEMENT
     # ------------------------------------------
+
     st.markdown("### Current Area Statement Table")
 
     if rooms_df.empty:
@@ -644,6 +650,7 @@ elif module == "2. Space Planner & Area Statement":
     # ------------------------------------------
     # MANAGE SPACES
     # ------------------------------------------
+
     st.markdown("### Manage Spaces")
 
     with st.form("add_room_form"):
@@ -681,16 +688,20 @@ elif module == "2. Space Planner & Area Statement":
         )
 
         # ------------------------------------------
-        # ROOM NAME VALIDATION AND ADDITION
+        # VALIDATE AND ADD ROOM
         # ------------------------------------------
+
         if submitted:
 
-           r_name = " ".join(r_name.split())
+            # Remove all extra whitespace
+            r_name = " ".join(r_name.split())
 
             if not r_name:
+
                 st.error("Room name cannot be empty.")
 
             else:
+
                 st.session_state.rooms.append({
                     "name": r_name,
                     "zone": r_zone,
@@ -707,6 +718,7 @@ elif module == "2. Space Planner & Area Statement":
     # ------------------------------------------
     # DELETE ROOM
     # ------------------------------------------
+
     room_names = [
         r["name"] for r in st.session_state.rooms
     ]
@@ -734,16 +746,16 @@ elif module == "2. Space Planner & Area Statement":
     # ------------------------------------------
     # TOTAL PROGRAMMED AREA
     # ------------------------------------------
+
     total_programmed = sum(
-        [
-            r["count"] * r["unit_area"]
-            for r in st.session_state.rooms
-        ]
+        r["count"] * r["unit_area"]
+        for r in st.session_state.rooms
     )
 
     # ------------------------------------------
     # MAXIMUM ALLOWABLE BUILT-UP AREA
     # ------------------------------------------
+
     p = st.session_state.project_info
 
     max_allowable = (
@@ -755,6 +767,7 @@ elif module == "2. Space Planner & Area Statement":
     # ------------------------------------------
     # SPACE PROGRAMMING VS BUILT-UP CAPACITY
     # ------------------------------------------
+
     st.markdown(
         "### Space Programming vs. Built-Up Capacity"
     )
@@ -782,6 +795,7 @@ elif module == "2. Space Planner & Area Statement":
     # ------------------------------------------
     # EXPORT AREA STATEMENT AS CSV
     # ------------------------------------------
+
     csv_data = rooms_df.to_csv(
         index=False
     ).encode("utf-8")
@@ -792,7 +806,6 @@ elif module == "2. Space Planner & Area Statement":
         file_name="area_statement.csv",
         mime="text/csv"
     )
-
 
 # ----------------------------------------------------
 # MODULE 3: PARKING PLANNER
