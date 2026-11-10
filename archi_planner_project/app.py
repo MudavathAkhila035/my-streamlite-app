@@ -808,65 +808,225 @@ elif module == "2. Space Planner & Area Statement":
     )
 
 # ----------------------------------------------------
+
 # MODULE 3: PARKING PLANNER
 # ----------------------------------------------------
 elif module == "3. Parking Planner":
+
     st.markdown("## Module 3: Parking Estimation & Circulation Planner")
-    st.write("Calculate car and two-wheeler parking bay requirements, circulation driveways, ramp allowances, and total parking footprint based on local standards.")
+
+    st.write(
+        "Calculate car and two-wheeler parking bay requirements, "
+        "circulation driveways, ramp allowances, and total parking "
+        "footprint based on local standards."
+    )
+
+    # ------------------------------------------
+    # VEHICLE COUNTS & PARKING BAY INPUTS
+    # ------------------------------------------
 
     col1, col2 = st.columns(2)
-    
+
     with col1:
+
         st.markdown("### Vehicle Counts & Bays")
-        cars = st.number_input("Number of Cars", min_value=0, max_value=200, value=st.session_state.parking["cars"])
-        twos = st.number_input("Number of Two-Wheelers", min_value=0, max_value=500, value=st.session_state.parking["two_wheelers"])
-        acc = st.number_input("Accessible Parking Spaces", min_value=0, max_value=50, value=st.session_state.parking["accessible"])
-        
-        car_area = st.number_input("Area per Car Bay (m²)", min_value=10.0, max_value=30.0, value=st.session_state.parking["car_bay_area"])
-        two_area = st.number_input("Area per Two-Wheeler Bay (m²)", min_value=1.0, max_value=10.0, value=st.session_state.parking["two_wheeler_area"])
-        acc_area = st.number_input("Area per Accessible Bay (m²)", min_value=10.0, max_value=40.0, value=st.session_state.parking["accessible_area"])
+
+        cars = st.number_input(
+            "Number of Cars",
+            min_value=0,
+            max_value=200,
+            value=int(st.session_state.parking["cars"]),
+            step=1
+        )
+
+        twos = st.number_input(
+            "Number of Two-Wheelers",
+            min_value=0,
+            max_value=500,
+            value=int(st.session_state.parking["two_wheelers"]),
+            step=1
+        )
+
+        # Accessible spaces cannot exceed car spaces
+        acc = st.number_input(
+            "Accessible Parking Spaces",
+            min_value=0,
+            max_value=int(cars),
+            value=min(
+                int(st.session_state.parking["accessible"]),
+                int(cars)
+            ),
+            step=1
+        )
+
+        car_area = st.number_input(
+            "Area per Car Bay (m²)",
+            min_value=10.0,
+            max_value=30.0,
+            value=float(st.session_state.parking["car_bay_area"]),
+            step=0.25
+        )
+
+        two_area = st.number_input(
+            "Area per Two-Wheeler Bay (m²)",
+            min_value=1.0,
+            max_value=10.0,
+            value=float(st.session_state.parking["two_wheeler_area"]),
+            step=0.25
+        )
+
+        acc_area = st.number_input(
+            "Area per Accessible Bay (m²)",
+            min_value=10.0,
+            max_value=40.0,
+            value=float(st.session_state.parking["accessible_area"]),
+            step=0.5
+        )
+
+    # ------------------------------------------
+    # CIRCULATION & SERVICE ALLOWANCES
+    # ------------------------------------------
 
     with col2:
-        st.markdown("### Circulation & Service Allowances")
-        circ_pct = st.number_input("Driveway & Circulation Allowance (%)", min_value=10.0, max_value=100.0, value=st.session_state.parking["circulation_pct"])
-        ramp_pct = st.number_input("Ramp / Basement Service Allowance (%)", min_value=0.0, max_value=100.0, value=st.session_state.parking["ramp_allowance"])
-        
-        st.session_state.parking.update({
-            "cars": cars,
-            "two_wheelers": twos,
-            "accessible": acc,
-            "car_bay_area": car_area,
-            "two_wheeler_area": two_area,
-            "accessible_area": acc_area,
-            "circulation_pct": circ_pct,
-            "ramp_allowance": ramp_pct
-        })
 
-    car_total = (cars - acc) * car_area
-    acc_total = acc * acc_area
-    two_total = twos * two_area
-    base_parking = car_total + acc_total + two_total
-    circulation_area = base_parking * (circ_pct / 100.0)
-    ramp_area = (base_parking + circulation_area) * (ramp_pct / 100.0)
-    total_parking_footprint = base_parking + circulation_area + ramp_area
+        st.markdown("### Circulation & Service Allowances")
+
+        circ_pct = st.number_input(
+            "Driveway & Circulation Allowance (%)",
+            min_value=10.0,
+            max_value=100.0,
+            value=float(st.session_state.parking["circulation_pct"]),
+            step=1.0
+        )
+
+        ramp_pct = st.number_input(
+            "Ramp / Basement Service Allowance (%)",
+            min_value=0.0,
+            max_value=100.0,
+            value=float(st.session_state.parking["ramp_allowance"]),
+            step=1.0
+        )
+
+    # ------------------------------------------
+    # UPDATE PARKING SESSION DATA
+    # ------------------------------------------
+
+    st.session_state.parking.update({
+        "cars": int(cars),
+        "two_wheelers": int(twos),
+        "accessible": int(acc),
+        "car_bay_area": float(car_area),
+        "two_wheeler_area": float(two_area),
+        "accessible_area": float(acc_area),
+        "circulation_pct": float(circ_pct),
+        "ramp_allowance": float(ramp_pct)
+    })
+
+    # ------------------------------------------
+    # PARKING AREA CALCULATIONS
+    # ------------------------------------------
+
+    # Regular car spaces
+    regular_cars = int(cars) - int(acc)
+
+    car_total = regular_cars * car_area
+
+    # Accessible parking spaces
+    acc_total = int(acc) * acc_area
+
+    # Two-wheeler parking spaces
+    two_total = int(twos) * two_area
+
+    # Total base parking area
+    base_parking = (
+        car_total + acc_total + two_total
+    )
+
+    # Circulation and driveway allowance
+    circulation_area = (
+        base_parking * (circ_pct / 100.0)
+    )
+
+    # Ramp and basement service allowance
+    ramp_area = (
+        (base_parking + circulation_area)
+        * (ramp_pct / 100.0)
+    )
+
+    # Total parking footprint
+    total_parking_footprint = (
+        base_parking + circulation_area + ramp_area
+    )
+
+    # ------------------------------------------
+    # PARKING SUMMARY
+    # ------------------------------------------
 
     st.markdown("---")
+
     st.markdown("### Parking Summary & Breakdown")
-    
+
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Base Bay Area", f"{base_parking:.2f} m²")
-    m2.metric("Circulation / Driveways", f"{circulation_area:.2f} m²")
-    m3.metric("Ramp / Basement Allowance", f"{ramp_area:.2f} m²")
-    m4.metric("Total Parking Footprint", f"{total_parking_footprint:.2f} m²")
+
+    m1.metric(
+        "Base Bay Area",
+        f"{base_parking:.2f} m²"
+    )
+
+    m2.metric(
+        "Circulation / Driveways",
+        f"{circulation_area:.2f} m²"
+    )
+
+    m3.metric(
+        "Ramp / Basement Allowance",
+        f"{ramp_area:.2f} m²"
+    )
+
+    m4.metric(
+        "Total Parking Footprint",
+        f"{total_parking_footprint:.2f} m²"
+    )
+
+    # ------------------------------------------
+    # PARKING AREA BREAKDOWN CHART
+    # ------------------------------------------
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    categories = ['Car Bays', 'Accessible Bays', 'Two-Wheeler Bays', 'Circulation', 'Ramp Allowance']
-    values = [car_total, acc_total, two_total, circulation_area, ramp_area]
-    colors_list = ['#3498DB', '#9B59B6', '#1ABC9C', '#F1C40F', '#E74C3C']
-    
-    ax.barh(categories, values, color=colors_list)
+
+    categories = [
+        "Car Bays",
+        "Accessible Bays",
+        "Two-Wheeler Bays",
+        "Circulation",
+        "Ramp Allowance"
+    ]
+
+    values = [
+        car_total,
+        acc_total,
+        two_total,
+        circulation_area,
+        ramp_area
+    ]
+
+    colors_list = [
+        "#3498DB",
+        "#9B59B6",
+        "#1ABC9C",
+        "#F1C40F",
+        "#E74C3C"
+    ]
+
+    ax.barh(
+        categories,
+        values,
+        color=colors_list
+    )
+
     ax.set_xlabel("Area in m²")
     ax.set_title("Parking Area Breakdown")
+
     st.pyplot(fig)
 
 # ----------------------------------------------------
