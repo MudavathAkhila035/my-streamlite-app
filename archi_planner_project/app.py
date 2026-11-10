@@ -1318,6 +1318,7 @@ elif module == "5. Sun Path & Orientation":
 
 
 # ----------------------------------------------------
+
 # MODULE 6: REPORT GENERATOR
 # ----------------------------------------------------
 
@@ -1329,6 +1330,10 @@ elif module == "6. Report Generator":
         "Combine project information, area statement, parking, "
         "zoning and solar analysis into an Excel report."
     )
+
+    # --------------------------------
+    # GET PROJECT DATA
+    # --------------------------------
 
     p = st.session_state.project_info
     rooms_df = pd.DataFrame(st.session_state.rooms)
@@ -1344,22 +1349,184 @@ elif module == "6. Report Generator":
     project_df = pd.DataFrame([p])
     parking_df = pd.DataFrame([parking])
     zoning_df = pd.DataFrame([zoning])
-    orientation_df = pd.DataFrame([orientation])
+
+    # --------------------------------
+    # SOLAR ANALYSIS CALCULATION
+    # SAME FORMULA AS MODULE 5
+    # --------------------------------
+
+    latitude = float(orientation["latitude"])
+    longitude = float(orientation["longitude"])
+    orientation_angle = float(orientation["orientation_angle"])
+    building_height = float(orientation["building_height"])
+
+    selected_date = pd.to_datetime(
+        orientation["date"]
+    ).date()
+
+    selected_time = pd.to_datetime(
+        orientation["time"]
+    ).time()
+
+    day_number = selected_date.timetuple().tm_yday
+
+    B = 2 * np.pi * (day_number - 81) / 364
+
+    declination = 23.45 * np.sin(
+        np.deg2rad(360 * (284 + day_number) / 365)
+    )
+
+    equation_of_time = (
+        9.87 * np.sin(2 * B)
+        - 7.53 * np.cos(B)
+        - 1.5 * np.sin(B)
+    )
+
+    clock_minutes = (
+        selected_time.hour * 60
+        + selected_time.minute
+    )
+
+    solar_minutes = (
+        clock_minutes
+        + equation_of_time
+        + 4 * (longitude - 82.5)
+    )
+
+    solar_hour = solar_minutes / 60
+    hour_angle = 15 * (solar_hour - 12)
+
+    lat_rad = np.deg2rad(latitude)
+    dec_rad = np.deg2rad(declination)
+    ha_rad = np.deg2rad(hour_angle)
+
+    altitude_value = np.arcsin(
+        np.sin(lat_rad) * np.sin(dec_rad)
+        + np.cos(lat_rad) * np.cos(dec_rad) * np.cos(ha_rad)
+    )
+
+    solar_altitude = np.rad2deg(altitude_value)
+
+    azimuth = (
+        np.rad2deg(
+            np.arctan2(
+                np.sin(ha_rad),
+                np.cos(ha_rad) * np.sin(lat_rad)
+                - np.tan(dec_rad) * np.cos(lat_rad)
+            )
+        ) + 180
+    ) % 360
+
+    # --------------------------------
+    # SHADOW LENGTH
+    # --------------------------------
+
+    if solar_altitude > 0:
+        shadow_length = (
+            building_height / np.tan(altitude_value)
+        )
+        shadow_result = round(float(shadow_length), 2)
+        calculation_note = "Sun is above the horizon"
+    else:
+        shadow_result = None
+        calculation_note = "Sun is below the horizon"
+
+    # --------------------------------
+    # ARCHITECTURAL RECOMMENDATIONS
+    # --------------------------------
+
+    recommendations = (
+        "Study east and west facades for low-angle morning "
+        "and evening sun. Use suitable shading devices on "
+        "exposed facades. Consider daylight availability "
+        "when positioning major spaces. Use solar altitude "
+        "and azimuth as preliminary design inputs."
+    )
+
+    # --------------------------------
+    # COMPLETE SOLAR DATAFRAME
+    # --------------------------------
+
+    solar_data = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "orientation": orientation_angle,
+        "date": str(selected_date),
+        "time": str(selected_time),
+        "building_height": building_height,
+        "solar_altitude_degrees": round(float(solar_altitude), 2),
+        "solar_azimuth_degrees": round(float(azimuth), 2),
+        "shadow_length_m": shadow_result,
+        "architectural_recommendations": recommendations,
+        "calculation_note": calculation_note
+    }
+
+    orientation_df = pd.DataFrame([solar_data])
+
+    # --------------------------------
+    # PROJECT SUMMARY
+    # --------------------------------
 
     st.markdown("### Project Summary")
 
     st.write(f"**Project:** {p['name']}")
     st.write(f"**Location:** {p['location']}")
+
     st.write(
         f"**Site Area:** "
         f"{p['site_length'] * p['site_width']:.2f} m²"
     )
 
+    # --------------------------------
+    # AREA STATEMENT PREVIEW
+    # --------------------------------
+
     st.markdown("### Area Statement Preview")
-    st.dataframe(rooms_df, use_container_width=True)
+
+    st.dataframe(
+        rooms_df,
+        use_container_width=True
+    )
 
     total_area = rooms_df["Total Area"].sum()
-    st.metric("Total Programmed Area", f"{total_area:.2f} m²")
+
+    st.metric(
+        "Total Programmed Area",
+        f"{total_area:.2f} m²"
+    )
+
+    # --------------------------------
+    # SOLAR RESULTS PREVIEW
+    # --------------------------------
+
+    st.markdown("### Solar Analysis Preview")
+
+    s1, s2, s3 = st.columns(3)
+
+    s1.metric(
+        "Solar Altitude",
+        f"{solar_altitude:.2f}°"
+    )
+
+    s2.metric(
+        "Solar Azimuth",
+        f"{azimuth:.2f}°"
+    )
+
+    if shadow_result is not None:
+        s3.metric(
+            "Shadow Length",
+            f"{shadow_result:.2f} m"
+        )
+    else:
+        s3.metric(
+            "Shadow Length",
+            "Sun below horizon"
+        )
+
+    # --------------------------------
+    # EXCEL REPORT GENERATION
+    # --------------------------------
 
     st.markdown("### Export Complete Project Report")
 
@@ -1371,23 +1538,33 @@ elif module == "6. Report Generator":
     ) as writer:
 
         project_df.to_excel(
-            writer, sheet_name="Project Details", index=False
+            writer,
+            sheet_name="Project Details",
+            index=False
         )
 
         rooms_df.to_excel(
-            writer, sheet_name="Area Statement", index=False
+            writer,
+            sheet_name="Area Statement",
+            index=False
         )
 
         parking_df.to_excel(
-            writer, sheet_name="Parking", index=False
+            writer,
+            sheet_name="Parking",
+            index=False
         )
 
         zoning_df.to_excel(
-            writer, sheet_name="Site Zoning", index=False
+            writer,
+            sheet_name="Site Zoning",
+            index=False
         )
 
         orientation_df.to_excel(
-            writer, sheet_name="Sun Orientation", index=False
+            writer,
+            sheet_name="Sun Orientation",
+            index=False
         )
 
     st.download_button(
@@ -1397,4 +1574,7 @@ elif module == "6. Report Generator":
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    st.success("Your project report is ready to download.")
+    st.success(
+        "Your complete project report is ready to download."
+    )
+
