@@ -1030,62 +1030,149 @@ elif module == "3. Parking Planner":
     st.pyplot(fig)
 
 # ----------------------------------------------------
+
 # MODULE 4: SITE ZONING & DISTRIBUTION
 # ----------------------------------------------------
 elif module == "4. Site Zoning & Distribution":
+
     st.markdown("## Module 4: Conceptual Site Zoning & Distribution")
-    st.write("Generate proportional conceptual site zoning layouts based on percentage area allocations for buildings, parking, landscaping, and open circulation.")
+    st.write(
+        "Generate proportional conceptual site zoning layouts "
+        "based on percentage area allocations for buildings, "
+        "parking, landscaping, and open circulation."
+    )
 
     c1, c2 = st.columns(2)
+
     with c1:
-        b_pct = st.number_input("Building Footprint Zone (%)", 10.0, 80.0, st.session_state.zoning["building_pct"])
-        p_pct = st.number_input("Parking Zone (%)", 5.0, 50.0, st.session_state.zoning["parking_pct"])
-        l_pct = st.number_input("Landscape & Green Zone (%)", 5.0, 50.0, st.session_state.zoning["landscape_pct"])
-        
-        open_pct = max(0.0, 100.0 - (b_pct + p_pct + l_pct))
-        st.info(f"Open Circulation & Paved Spaces (Auto-calculated remainder): {open_pct:.1f}%")
-        
-        entrance = st.selectbox("Main Access / Entrance Direction", ["North", "South", "East", "West"])
-        
-        st.session_state.zoning.update({
-            "building_pct": b_pct,
-            "parking_pct": p_pct,
-            "landscape_pct": l_pct,
-            "open_pct": open_pct,
-            "entrance_dir": entrance
-        })
+        b_pct = st.number_input(
+            "Building Footprint Zone (%)",
+            min_value=10.0,
+            max_value=80.0,
+            value=float(st.session_state.zoning["building_pct"]),
+            step=1.0
+        )
 
-    with c2:
-        st.markdown("### Zone Area Distribution")
-        p = st.session_state.project_info
-        total_site = p["site_length"] * p["site_width"]
-        
-        b_area = total_site * (b_pct / 100.0)
-        p_area = total_site * (p_pct / 100.0)
-        l_area = total_site * (l_pct / 100.0)
-        o_area = total_site * (open_pct / 100.0)
-        
-        st.markdown(f"""
-        - **Total Site Area:** {total_site:.2f} m²
-        - **Building Footprint Area:** {b_area:.2f} m² ({b_pct}%)
-        - **Parking Zone Area:** {p_area:.2f} m² ({p_pct}%)
-        - **Landscape / Green Area:** {l_area:.2f} m² ({l_pct}%)
-        - **Open Circulation / Paved Area:** {o_area:.2f} m² ({open_pct:.1f}%)
-        - **Main Access Direction:** {entrance}
-        """)
+        p_pct = st.number_input(
+            "Parking Zone (%)",
+            min_value=5.0,
+            max_value=50.0,
+            value=float(st.session_state.zoning["parking_pct"]),
+            step=1.0
+        )
 
-    st.markdown("### Conceptual Zoning Diagram")
-    fig, ax = plt.subplots(figsize=(7, 6))
-    
-    labels = ['Building Footprint', 'Parking', 'Landscape / Green', 'Open Circulation']
-    sizes = [b_pct, p_pct, l_pct, open_pct]
-    colors = ['#2C3E50', '#E74C3C', '#27AE60', '#F39C12']
-    
-    wedges, texts, autotexts = ax.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=140, textprops=dict(color="black"))
-    plt.setp(autotexts, size=10, weight="bold")
-    ax.set_title(f"Conceptual Site Zoning Layout (Main Entrance: {entrance})", fontsize=12, pad=20)
-    
-    st.pyplot(fig)
+        l_pct = st.number_input(
+            "Landscape & Green Zone (%)",
+            min_value=5.0,
+            max_value=50.0,
+            value=float(st.session_state.zoning["landscape_pct"]),
+            step=1.0
+        )
+
+        total_pct = b_pct + p_pct + l_pct
+
+        entrance = st.selectbox(
+            "Main Access / Entrance Direction",
+            ["North", "South", "East", "West"],
+            index=["North", "South", "East", "West"].index(
+                st.session_state.zoning.get("entrance_dir", "North")
+            )
+        )
+
+        if total_pct > 100:
+            open_pct = 0.0
+
+            st.session_state.zoning.update({
+                "building_pct": b_pct,
+                "parking_pct": p_pct,
+                "landscape_pct": l_pct,
+                "open_pct": open_pct,
+                "entrance_dir": entrance
+            })
+
+            st.error(
+                f"Invalid allocation! Total zone allocation is "
+                f"{total_pct:.1f}%. It cannot exceed 100%. "
+                f"Please reduce the percentages by {total_pct - 100:.1f}%."
+            )
+
+        else:
+            open_pct = 100.0 - total_pct
+
+            st.info(
+                f"Open Circulation & Paved Spaces "
+                f"(Auto-calculated remainder): {open_pct:.1f}%"
+            )
+
+            st.session_state.zoning.update({
+                "building_pct": b_pct,
+                "parking_pct": p_pct,
+                "landscape_pct": l_pct,
+                "open_pct": open_pct,
+                "entrance_dir": entrance
+            })
+
+    if total_pct <= 100:
+
+        with c2:
+            st.markdown("### Zone Area Distribution")
+
+            p = st.session_state.project_info
+            total_site = p["site_length"] * p["site_width"]
+
+            b_area = total_site * (b_pct / 100.0)
+            p_area = total_site * (p_pct / 100.0)
+            l_area = total_site * (l_pct / 100.0)
+            o_area = total_site * (open_pct / 100.0)
+
+            st.markdown(f"""
+            - **Total Site Area:** {total_site:.2f} m²
+            - **Building Footprint Area:** {b_area:.2f} m² ({b_pct:.1f}%)
+            - **Parking Zone Area:** {p_area:.2f} m² ({p_pct:.1f}%)
+            - **Landscape / Green Area:** {l_area:.2f} m² ({l_pct:.1f}%)
+            - **Open Circulation / Paved Area:** {o_area:.2f} m² ({open_pct:.1f}%)
+            - **Main Access Direction:** {entrance}
+            """)
+
+        st.markdown("### Conceptual Zoning Diagram")
+
+        fig, ax = plt.subplots(figsize=(7, 6))
+
+        labels = [
+            'Building Footprint',
+            'Parking',
+            'Landscape / Green',
+            'Open Circulation'
+        ]
+
+        sizes = [b_pct, p_pct, l_pct, open_pct]
+
+        colors = [
+            '#2C3E50',
+            '#E74C3C',
+            '#27AE60',
+            '#F39C12'
+        ]
+
+        wedges, texts, autotexts = ax.pie(
+            sizes,
+            labels=labels,
+            colors=colors,
+            autopct='%1.1f%%',
+            startangle=140,
+            textprops=dict(color="black")
+        )
+
+        plt.setp(autotexts, size=10, weight="bold")
+
+        ax.set_title(
+            f"Conceptual Site Zoning Layout "
+            f"(Main Entrance: {entrance})",
+            fontsize=12,
+            pad=20
+        )
+
+        st.pyplot(fig)
 
 
 # ----------------------------------------------------
