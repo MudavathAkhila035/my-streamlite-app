@@ -565,67 +565,234 @@ elif module == "1. Site Area Calculator":
     )
 
 # ----------------------------------------------------
+
 # MODULE 2: SPACE PLANNER & AREA STATEMENT
 # ----------------------------------------------------
 elif module == "2. Space Planner & Area Statement":
+
     st.markdown("## Module 2: Space Planner & Area Statement")
-    st.write("Manage architectural space programming, categorize zones, apply DSA sorting/searching, and compare with available built-up area.")
-    
+    st.write(
+        "Manage architectural space programming, categorize zones, "
+        "apply DSA sorting/searching, and compare with available built-up area."
+    )
+
+    # ------------------------------------------
+    # CURRENT AREA STATEMENT
+    # ------------------------------------------
     rooms_df = pd.DataFrame(st.session_state.rooms)
-    rooms_df["Total Area"] = rooms_df["count"] * rooms_df["unit_area"]
-    
+
+    rooms_df["Total Area"] = (
+        rooms_df["count"] * rooms_df["unit_area"]
+    )
+
     col_ctrl1, col_ctrl2 = st.columns([2, 1])
+
     with col_ctrl1:
-        search_query = st.text_input("🔍 Search Room Name (DSA Linear/Substring Search)", "")
+        search_query = st.text_input(
+            "🔍 Search Room Name (DSA Linear/Substring Search)",
+            ""
+        )
+
     with col_ctrl2:
-        sort_order = st.selectbox("📊 Sort Rooms by Area (DSA Quick/Merge Sort)", ["Descending (Largest First)", "Ascending (Smallest First)"])
+        sort_order = st.selectbox(
+            "📊 Sort Rooms by Area (DSA Quick/Merge Sort)",
+            [
+                "Descending (Largest First)",
+                "Ascending (Smallest First)"
+            ]
+        )
 
+    # ------------------------------------------
+    # SEARCH FUNCTION
+    # ------------------------------------------
     if search_query:
-        rooms_df = rooms_df[rooms_df["name"].str.contains(search_query, case=False, na=False)]
+        rooms_df = rooms_df[
+            rooms_df["name"].str.contains(
+                search_query,
+                case=False,
+                na=False
+            )
+        ]
 
+    # ------------------------------------------
+    # SORTING FUNCTION
+    # ------------------------------------------
     if "Descending" in sort_order:
-        rooms_df = rooms_df.sort_values(by="Total Area", ascending=False)
+        rooms_df = rooms_df.sort_values(
+            by="Total Area",
+            ascending=False
+        )
     else:
-        rooms_df = rooms_df.sort_values(by="Total Area", ascending=True)
+        rooms_df = rooms_df.sort_values(
+            by="Total Area",
+            ascending=True
+        )
 
+    # ------------------------------------------
+    # DISPLAY AREA STATEMENT
+    # ------------------------------------------
     st.markdown("### Current Area Statement Table")
-    st.dataframe(rooms_df, use_container_width=True)
 
+    if rooms_df.empty:
+        st.info("No matching room found.")
+    else:
+        st.dataframe(
+            rooms_df,
+            use_container_width=True
+        )
+
+    # ------------------------------------------
+    # MANAGE SPACES
+    # ------------------------------------------
     st.markdown("### Manage Spaces")
+
     with st.form("add_room_form"):
+
         c1, c2, c3, c4 = st.columns(4)
-        r_name = c1.text_input("Room Name", "Study Room")
-        r_zone = c2.selectbox("Zone", ["Public", "Semi-Public", "Private", "Service"])
-        r_count = c3.number_input("Number of Units", min_value=1, max_value=20, value=1)
-        r_area = c4.number_input("Unit Area (m²)", min_value=1.0, max_value=500.0, value=15.0)
-        
-        submitted = st.form_submit_button("Add Room to Programme")
+
+        r_name = c1.text_input(
+            "Room Name",
+            "Study Room"
+        )
+
+        r_zone = c2.selectbox(
+            "Zone",
+            ["Public", "Semi-Public", "Private", "Service"]
+        )
+
+        r_count = c3.number_input(
+            "Number of Units",
+            min_value=1,
+            max_value=20,
+            value=1,
+            step=1
+        )
+
+        r_area = c4.number_input(
+            "Unit Area (m²)",
+            min_value=1.0,
+            max_value=500.0,
+            value=15.0,
+            step=0.5
+        )
+
+        submitted = st.form_submit_button(
+            "Add Room to Programme"
+        )
+
+        # ------------------------------------------
+        # ROOM NAME VALIDATION AND ADDITION
+        # ------------------------------------------
         if submitted:
-            st.session_state.rooms.append({"name": r_name, "zone": r_zone, "count": int(r_count), "unit_area": float(r_area)})
-            st.success(f"Added {r_name} successfully!")
-            st.rerun()
 
-    room_names = [r["name"] for r in st.session_state.rooms]
+            r_name = r_name.strip()
+
+            if not r_name:
+                st.error("Room name cannot be empty.")
+
+            else:
+                st.session_state.rooms.append({
+                    "name": r_name,
+                    "zone": r_zone,
+                    "count": int(r_count),
+                    "unit_area": float(r_area)
+                })
+
+                st.success(
+                    f"Added {r_name} successfully!"
+                )
+
+                st.rerun()
+
+    # ------------------------------------------
+    # DELETE ROOM
+    # ------------------------------------------
+    room_names = [
+        r["name"] for r in st.session_state.rooms
+    ]
+
     if room_names:
-        to_delete = st.selectbox("Select Room to Delete", room_names)
+
+        to_delete = st.selectbox(
+            "Select Room to Delete",
+            room_names
+        )
+
         if st.button("Delete Selected Room"):
-            st.session_state.rooms = [r for r in st.session_state.rooms if r["name"] != to_delete]
-            st.success(f"Deleted {to_delete}!")
+
+            st.session_state.rooms = [
+                r for r in st.session_state.rooms
+                if r["name"] != to_delete
+            ]
+
+            st.success(
+                f"Deleted {to_delete}!"
+            )
+
             st.rerun()
 
-    total_programmed = sum([r['count'] * r['unit_area'] for r in st.session_state.rooms])
+    # ------------------------------------------
+    # TOTAL PROGRAMMED AREA
+    # ------------------------------------------
+    total_programmed = sum(
+        [
+            r["count"] * r["unit_area"]
+            for r in st.session_state.rooms
+        ]
+    )
+
+    # ------------------------------------------
+    # MAXIMUM ALLOWABLE BUILT-UP AREA
+    # ------------------------------------------
     p = st.session_state.project_info
-    max_allowable = (p['site_length'] * p['site_width']) * (p['ground_coverage_pct'] / 100.0) * p['num_floors']
 
-    st.markdown("### Space Programming vs. Built-Up Capacity")
+    max_allowable = (
+        p["site_length"] * p["site_width"]
+    ) * (
+        p["ground_coverage_pct"] / 100.0
+    ) * p["num_floors"]
+
+    # ------------------------------------------
+    # SPACE PROGRAMMING VS BUILT-UP CAPACITY
+    # ------------------------------------------
+    st.markdown(
+        "### Space Programming vs. Built-Up Capacity"
+    )
+
     col_m1, col_m2, col_m3 = st.columns(3)
-    col_m1.metric("Total Programmed Area", f"{total_programmed:.2f} m²")
-    col_m2.metric("Max Allowable Built-up Area", f"{max_allowable:.2f} m²")
-    diff = max_allowable - total_programmed
-    col_m3.metric("Area Variance / Buffer", f"{diff:.2f} m²", delta=f"{'Surplus' if diff >= 0 else 'Deficit'}")
 
-    csv_data = rooms_df.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Export Area Statement as CSV", data=csv_data, file_name="area_statement.csv", mime="text/csv")
+    col_m1.metric(
+        "Total Programmed Area",
+        f"{total_programmed:.2f} m²"
+    )
+
+    col_m2.metric(
+        "Max Allowable Built-up Area",
+        f"{max_allowable:.2f} m²"
+    )
+
+    diff = max_allowable - total_programmed
+
+    col_m3.metric(
+        "Area Variance / Buffer",
+        f"{diff:.2f} m²",
+        delta=f"{'Surplus' if diff >= 0 else 'Deficit'}"
+    )
+
+    # ------------------------------------------
+    # EXPORT AREA STATEMENT AS CSV
+    # ------------------------------------------
+    csv_data = rooms_df.to_csv(
+        index=False
+    ).encode("utf-8")
+
+    st.download_button(
+        "📥 Export Area Statement as CSV",
+        data=csv_data,
+        file_name="area_statement.csv",
+        mime="text/csv"
+    )
+
 
 # ----------------------------------------------------
 # MODULE 3: PARKING PLANNER
