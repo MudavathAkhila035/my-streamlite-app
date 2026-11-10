@@ -7,39 +7,188 @@ import json
 
 # Page Configuration
 st.set_page_config(
-    page_title="ARCHI-PLANNER – Smart Architectural Planning Assistant",
+    page_title="ARCHI-PLANNER | Architectural Planning Web Application",
     page_icon="🏛️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Architectural CSS Styling
+# Custom Architectural Website Styling
 st.markdown("""
 <style>
-    .main {
-        background-color: #F8F9FA;
+    :root {
+        --archi-navy: #192B3F;
+        --archi-teal: #258587;
+        --archi-mint: #DDEFEB;
+        --archi-cream: #F7F6F1;
+        --archi-ink: #2D3742;
     }
-    .stSidebar {
-        background-color: #2C3E50;
+
+    .stApp {
+        background: #F7F6F1;
+        color: var(--archi-ink);
     }
-    h1, h2, h3 {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        color: #2C3E50;
+
+    [data-testid="stHeader"] {
+        background: rgba(247, 246, 241, 0.92);
     }
-    .metric-card {
-        background-color: #FFFFFF;
-        padding: 20px;
+
+    [data-testid="stSidebar"] {
+        background: #192B3F;
+        border-right: 1px solid rgba(255,255,255,0.10);
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #F4F7F6 !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stRadio"] label {
+        padding: 0.45rem 0.55rem;
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        border-left: 4px solid #3498DB;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
+        background: rgba(255,255,255,0.10);
+    }
+
+    h1, h2, h3 {
+        color: #192B3F !important;
+        letter-spacing: -0.025em;
+        font-family: 'Aptos', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    p, label, .stMarkdown, .stText {
+        color: #2D3742;
+    }
+
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+        max-width: 1440px;
+    }
+
+    .archi-hero {
+        background: linear-gradient(120deg, #192B3F 0%, #24485A 62%, #258587 100%);
+        padding: 2.5rem 2.7rem;
+        border-radius: 18px;
+        color: #FFFFFF;
+        margin: 0.3rem 0 1.6rem 0;
+        box-shadow: 0 12px 32px rgba(25,43,63,0.13);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .archi-hero:after {
+        content: "";
+        position: absolute;
+        width: 230px;
+        height: 230px;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 50%;
+        right: -55px;
+        top: -90px;
+        box-shadow: 0 0 0 28px rgba(255,255,255,0.04),
+                    0 0 0 58px rgba(255,255,255,0.035);
+    }
+
+    .archi-kicker {
+        color: #C7E5DF;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        margin-bottom: 0.9rem;
+    }
+
+    .archi-hero h1 {
+        color: #FFFFFF !important;
+        font-size: clamp(2.3rem, 5vw, 3.7rem);
+        line-height: 1.03;
+        margin: 0 0 0.75rem 0;
+        font-weight: 750;
+    }
+
+    .archi-hero p {
+        color: #E2EFEC;
+        font-size: 1.08rem;
+        max-width: 760px;
+        line-height: 1.65;
+        margin: 0;
+    }
+
+    .archi-section-label {
+        color: #258587;
+        font-size: 0.76rem;
+        font-weight: 750;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+        margin: 1.6rem 0 0.45rem 0;
+    }
+
+    .archi-module-card, .archi-info-card {
+        background: #FFFFFF;
+        border: 1px solid #E6E9E7;
+        border-radius: 13px;
+        padding: 1.15rem 1.2rem;
+        min-height: 145px;
+        box-shadow: 0 4px 15px rgba(25,43,63,0.045);
+    }
+
+    .archi-module-number {
+        color: #258587;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        margin-bottom: 0.55rem;
+    }
+
+    .archi-module-card h4, .archi-info-card h4 {
+        color: #192B3F;
+        font-size: 1.02rem;
+        margin: 0 0 0.45rem 0;
+        font-weight: 700;
+    }
+
+    .archi-module-card p, .archi-info-card p {
+        color: #65727C;
+        font-size: 0.88rem;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .metric-card {
+        background: #FFFFFF;
+        padding: 18px 20px;
+        border-radius: 12px;
+        border: 1px solid #E6E9E7;
+        box-shadow: 0 4px 15px rgba(25,43,63,0.045);
+        border-left: 4px solid #258587;
         margin-bottom: 15px;
     }
+
     .architectural-header {
-        background: linear-gradient(90deg, #2C3E50 0%, #34495E 100%);
+        background: linear-gradient(120deg, #192B3F 0%, #258587 100%);
         color: white;
         padding: 25px;
-        border-radius: 8px;
+        border-radius: 13px;
         margin-bottom: 25px;
+    }
+
+    div.stButton > button {
+        border-radius: 8px;
+        border: 1px solid #258587;
+        font-weight: 650;
+    }
+
+    div[data-testid="stMetric"] {
+        background: #FFFFFF;
+        border: 1px solid #E6E9E7;
+        border-radius: 12px;
+        padding: 0.8rem 1rem;
+    }
+
+    hr {
+        border-color: #E2E7E5;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -104,7 +253,7 @@ if "orientation" not in st.session_state:
 
 # Sidebar Navigation
 st.sidebar.markdown("### 🏛️ ARCHI-PLANNER")
-st.sidebar.markdown("*Smart Architectural Planning Assistant*")
+st.sidebar.markdown("*Architectural Planning Web Application*")
 st.sidebar.markdown("---")
 
 module = st.sidebar.radio(
@@ -125,51 +274,96 @@ module = st.sidebar.radio(
 # ----------------------------------------------------
 if module == "Dashboard":
     st.markdown("""
-    <div class="architectural-header">
+    <section class="archi-hero">
+        <div class="archi-kicker">Architectural planning workspace</div>
         <h1>ARCHI-PLANNER</h1>
-        <p style="font-size: 1.1rem; margin-bottom: 0;">Comprehensive Preliminary Architectural Planning & Computation Platform</p>
-    </div>
+        <p>Plan smarter. Design better. A web-based workspace for organising
+        architectural requirements, checking preliminary calculations and
+        preparing project reports.</p>
+    </section>
     """, unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown("### Welcome to ARCHI-PLANNER")
-        st.write("""
-        **ARCHI-PLANNER** is built specifically for architecture students and preliminary design professionals. It integrates architectural calculations, spatial programming, zoning layouts, parking estimation, solar orientation studies, and automated professional PDF report generation into a single unified desktop-ready workspace.
-        
-        #### Core Capabilities:
-        - **Site & Envelope Calculations:** Automatically computes plot areas, permissible FSI floor areas, ground coverage limits, and setback envelopes.
-        - **Interactive Space Programming:** Manage room schedules, zone categorization (Public, Semi-Public, Private, Service), and DSA-backed sorting/searching.
-        - **Parking Estimation:** Calculate car, two-wheeler, and accessible parking bays with configurable circulation and ramp allowances.
-        - **Conceptual Site Zoning:** Generate proportional zoning diagrams using Matplotlib.
-        - **Solar & Orientation Studies:** Analyze sun exposure, daylighting, and shadows.
-        - **Professional Report Generation:** Compile all metrics, tables, and diagrams into a structured PDF report.
-        """)
-        
-        st.info("💡 **Tip:** Use the sidebar navigation to move between modules. All project data persists across modules during your session.")
 
-    with col2:
-        st.markdown("### Project Quick Info")
-        p = st.session_state.project_info
+    st.markdown('<div class="archi-section-label">Your workspace</div>', unsafe_allow_html=True)
+    st.markdown("## Tools for the early stages of design")
+    st.markdown(
+        "Choose a module from the navigation panel to enter project information "
+        "and explore the corresponding planning results."
+    )
+
+    module_cards = [
+        ("01", "Site Area & Building Envelope",
+         "Check plot area, setbacks, FSI/FAR and permissible ground coverage."),
+        ("02", "Space Planner & Area Statement",
+         "Organise room requirements, zones, quantities and area totals."),
+        ("03", "Parking Estimation & Circulation",
+         "Estimate parking bays, accessible spaces and circulation allowances."),
+        ("04", "Site Zoning & Distribution",
+         "Review building, parking, landscape and open-area percentages."),
+        ("05", "Sun Path & Orientation",
+         "Study approximate solar altitude, azimuth and shadow length."),
+        ("06", "Architectural Report Generator",
+         "Compile project information and module outputs into an Excel report.")
+    ]
+
+    card_cols = st.columns(3)
+    for index, item in enumerate(module_cards):
+        number, title, description = item
+        with card_cols[index % 3]:
+            st.markdown(f"""
+            <div class="archi-module-card">
+                <div class="archi-module-number">MODULE {number}</div>
+                <h4>{title}</h4>
+                <p>{description}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        if index in (2,):
+            card_cols = st.columns(3)
+
+    st.markdown('<div class="archi-section-label">Project snapshot</div>', unsafe_allow_html=True)
+    p = st.session_state.project_info
+    total_plot_area = p['site_length'] * p['site_width']
+    total_prog_area = sum(r['count'] * r['unit_area'] for r in st.session_state.rooms)
+    max_allowable = total_plot_area * (p['ground_coverage_pct'] / 100.0) * p['num_floors']
+
+    metric1, metric2, metric3, metric4 = st.columns(4)
+    metric1.metric("Plot area", f"{total_plot_area:,.1f} m²")
+    metric2.metric("FSI / FAR", f"{p['fsi']}")
+    metric3.metric("Programmed area", f"{total_prog_area:,.1f} m²")
+    metric4.metric("Floor count", f"{p['num_floors']}")
+
+    info_col1, info_col2 = st.columns([1.25, 1])
+    with info_col1:
+        st.markdown("### Project information")
         st.markdown(f"""
-        <div class="metric-card">
-            <b>Project:</b> {p['name']}<br>
-            <b>Location:</b> {p['location']}<br>
-            <b>Site Dimensions:</b> {p['site_length']}m × {p['site_width']}m<br>
-            <b>Total Plot Area:</b> {p['site_length'] * p['site_width']:.2f} m²<br>
-            <b>FSI / FAR:</b> {p['fsi']}<br>
-            <b>Floors:</b> {p['num_floors']}
+        <div class="archi-info-card">
+            <h4>{p['name']}</h4>
+            <p><b>Location:</b> {p['location']}<br>
+            <b>Site dimensions:</b> {p['site_length']} m × {p['site_width']} m<br>
+            <b>Ground coverage limit:</b> {p['ground_coverage_pct']}%<br>
+            <b>Indicative floor area capacity:</b> {max_allowable:,.1f} m²</p>
         </div>
         """, unsafe_allow_html=True)
-        
-        total_prog_area = sum([r['count'] * r['unit_area'] for r in st.session_state.rooms])
-        max_allowable = (p['site_length'] * p['site_width']) * (p['ground_coverage_pct'] / 100.0) * p['num_floors']
-        
-        st.metric("Total Programmed Area", f"{total_prog_area:.1f} m²", f"Max Permissible: {max_allowable:.1f} m²")
-        
+    with info_col2:
+        st.markdown("### How to use the website")
+        st.markdown("""
+        <div class="archi-info-card">
+            <h4>Simple workflow</h4>
+            <p><b>01</b> Select a planning module from the sidebar.<br>
+            <b>02</b> Enter or update your project values.<br>
+            <b>03</b> Review the calculated results and warnings.<br>
+            <b>04</b> Use the Report Generator to export your information.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.caption(
+        "ARCHI-PLANNER is an educational and preliminary planning aid. "
+        "Always verify project requirements, site information and applicable local regulations independently."
+    )
+
 # ----------------------------------------------------
 # MODULE 1: SITE AREA CALCULATOR
+# ----------------------------------------------------
+
 # ----------------------------------------------------
 elif module == "1. Site Area Calculator":
 
