@@ -1,0 +1,1517 @@
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import io
+import json
+
+# Page Configuration
+st.set_page_config(
+    page_title="ARCHI-PLANNER | Architectural Planning Web Application",
+    page_icon="🏛️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom Architectural Website Styling
+st.markdown("""
+<style>
+    :root {
+        --archi-navy: #192B3F;
+        --archi-teal: #258587;
+        --archi-mint: #DDEFEB;
+        --archi-cream: #F7F6F1;
+        --archi-ink: #2D3742;
+    }
+
+    .stApp {
+        background: #F7F6F1;
+        color: var(--archi-ink);
+    }
+
+    [data-testid="stHeader"] {
+        background: rgba(247, 246, 241, 0.92);
+    }
+
+    [data-testid="stSidebar"] {
+        background: #192B3F;
+        border-right: 1px solid rgba(255,255,255,0.10);
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #F4F7F6 !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stRadio"] label {
+        padding: 0.45rem 0.55rem;
+        border-radius: 8px;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
+        background: rgba(255,255,255,0.10);
+    }
+
+    h1, h2, h3 {
+        color: #192B3F !important;
+        letter-spacing: -0.025em;
+        font-family: 'Aptos', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    p, label, .stMarkdown, .stText {
+        color: #2D3742;
+    }
+
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+        max-width: 1440px;
+    }
+
+    .archi-hero {
+        background: linear-gradient(120deg, #192B3F 0%, #24485A 62%, #258587 100%);
+        padding: 2.5rem 2.7rem;
+        border-radius: 18px;
+        color: #FFFFFF;
+        margin: 0.3rem 0 1.6rem 0;
+        box-shadow: 0 12px 32px rgba(25,43,63,0.13);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .archi-hero:after {
+        content: "";
+        position: absolute;
+        width: 230px;
+        height: 230px;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 50%;
+        right: -55px;
+        top: -90px;
+        box-shadow: 0 0 0 28px rgba(255,255,255,0.04),
+                    0 0 0 58px rgba(255,255,255,0.035);
+    }
+
+    .archi-kicker {
+        color: #C7E5DF;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        margin-bottom: 0.9rem;
+    }
+
+    .archi-hero h1 {
+        color: #FFFFFF !important;
+        font-size: clamp(2.3rem, 5vw, 3.7rem);
+        line-height: 1.03;
+        margin: 0 0 0.75rem 0;
+        font-weight: 750;
+    }
+
+    .archi-hero p {
+        color: #E2EFEC;
+        font-size: 1.08rem;
+        max-width: 760px;
+        line-height: 1.65;
+        margin: 0;
+    }
+
+    .archi-section-label {
+        color: #258587;
+        font-size: 0.76rem;
+        font-weight: 750;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+        margin: 1.6rem 0 0.45rem 0;
+    }
+
+    .archi-module-card, .archi-info-card {
+        background: #FFFFFF;
+        border: 1px solid #E6E9E7;
+        border-radius: 13px;
+        padding: 1.15rem 1.2rem;
+        min-height: 145px;
+        box-shadow: 0 4px 15px rgba(25,43,63,0.045);
+    }
+
+    .archi-module-number {
+        color: #258587;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        margin-bottom: 0.55rem;
+    }
+
+    .archi-module-card h4, .archi-info-card h4 {
+        color: #192B3F;
+        font-size: 1.02rem;
+        margin: 0 0 0.45rem 0;
+        font-weight: 700;
+    }
+
+    .archi-module-card p, .archi-info-card p {
+        color: #65727C;
+        font-size: 0.88rem;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .metric-card {
+        background: #FFFFFF;
+        padding: 18px 20px;
+        border-radius: 12px;
+        border: 1px solid #E6E9E7;
+        box-shadow: 0 4px 15px rgba(25,43,63,0.045);
+        border-left: 4px solid #258587;
+        margin-bottom: 15px;
+    }
+
+    .architectural-header {
+        background: linear-gradient(120deg, #192B3F 0%, #258587 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 13px;
+        margin-bottom: 25px;
+    }
+
+    div.stButton > button {
+        border-radius: 8px;
+        border: 1px solid #258587;
+        font-weight: 650;
+    }
+
+    div[data-testid="stMetric"] {
+        background: #FFFFFF;
+        border: 1px solid #E6E9E7;
+        border-radius: 12px;
+        padding: 0.8rem 1rem;
+    }
+
+    hr {
+        border-color: #E2E7E5;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize Session State for Data Persistence
+if "project_info" not in st.session_state:
+    st.session_state.project_info = {
+        "name": "Residency Tower Alpha",
+        "location": "Varanasi, Urban Zone A",
+        "client": "Academic Studio Faculty",
+        "site_length": 45.0,
+        "site_width": 30.0,
+        "setback_front": 5.0,
+        "setback_rear": 3.0,
+        "setback_side": 3.0,
+        "fsi": 2.5,
+        "ground_coverage_pct": 50.0,
+        "num_floors": 4
+    }
+
+if "rooms" not in st.session_state:
+    st.session_state.rooms = [
+        {"name": "Living Room", "zone": "Public", "count": 1, "unit_area": 35.0},
+        {"name": "Dining Room", "zone": "Semi-Public", "count": 1, "unit_area": 24.0},
+        {"name": "Kitchen", "zone": "Service", "count": 1, "unit_area": 18.0},
+        {"name": "Master Bedroom", "zone": "Private", "count": 2, "unit_area": 28.0},
+        {"name": "Guest Bedroom", "zone": "Private", "count": 1, "unit_area": 20.0},
+        {"name": "Bathrooms", "zone": "Service", "count": 3, "unit_area": 6.0},
+        {"name": "Balcony / Deck", "zone": "Semi-Public", "count": 2, "unit_area": 12.0}
+    ]
+
+if "parking" not in st.session_state:
+    st.session_state.parking = {
+        "cars": 10,
+        "two_wheelers": 15,
+        "accessible": 2,
+        "car_bay_area": 13.75,
+        "two_wheeler_area": 3.0,
+        "accessible_area": 18.0,
+        "circulation_pct": 30.0,
+        "ramp_allowance": 25.0
+    }
+
+if "zoning" not in st.session_state:
+    st.session_state.zoning = {
+        "building_pct": 50.0,
+        "parking_pct": 20.0,
+        "landscape_pct": 20.0,
+        "open_pct": 10.0,
+        "entrance_dir": "North"
+    }
+
+# Sidebar Navigation
+st.sidebar.markdown("### 🏛️ ARCHI-PLANNER")
+st.sidebar.markdown("*Architectural Planning Web Application*")
+st.sidebar.markdown("---")
+
+module = st.sidebar.radio(
+    "Navigation Menu",
+    [
+        "Dashboard",
+        "1. Site Area Calculator",
+        "2. Space Planner & Area Statement",
+        "3. Parking Planner",
+        "4. Site Zoning & Distribution",
+        "5. Report Generator"
+    ]
+)
+
+# ----------------------------------------------------
+# MODULE 0: DASHBOARD
+# ----------------------------------------------------
+if module == "Dashboard":
+    st.markdown("""
+    <section class="archi-hero">
+        <div class="archi-kicker">Architectural planning workspace</div>
+        <h1>ARCHI-PLANNER</h1>
+        <p>Plan smarter. Design better. A web-based workspace for organising
+        architectural requirements, checking preliminary calculations and
+        preparing project reports.</p>
+    </section>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="archi-section-label">Your workspace</div>', unsafe_allow_html=True)
+    st.markdown("## Tools for the early stages of design")
+    st.markdown(
+        "Choose a module from the navigation panel to enter project information "
+        "and explore the corresponding planning results."
+    )
+
+    module_cards = [
+        ("01", "Site Area & Building Envelope",
+         "Check plot area, setbacks, FSI/FAR and permissible ground coverage."),
+        ("02", "Space Planner & Area Statement",
+         "Organise room requirements, zones, quantities and area totals."),
+        ("03", "Parking Estimation & Circulation",
+         "Estimate parking bays, accessible spaces and circulation allowances."),
+        ("04", "Site Zoning & Distribution",
+         "Review building, parking, landscape and open-area percentages."),
+        ("05", "Architectural Report Generator",
+         "Compile project information and module outputs into an Excel report.")
+    ]
+
+    card_cols = st.columns(3)
+    for index, item in enumerate(module_cards):
+        number, title, description = item
+        with card_cols[index % 3]:
+            st.markdown(f"""
+            <div class="archi-module-card">
+                <div class="archi-module-number">MODULE {number}</div>
+                <h4>{title}</h4>
+                <p>{description}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        if index in (2,):
+            card_cols = st.columns(3)
+
+    st.markdown('<div class="archi-section-label">Project snapshot</div>', unsafe_allow_html=True)
+    p = st.session_state.project_info
+    total_plot_area = p['site_length'] * p['site_width']
+    total_prog_area = sum(r['count'] * r['unit_area'] for r in st.session_state.rooms)
+    max_allowable = total_plot_area * (p['ground_coverage_pct'] / 100.0) * p['num_floors']
+
+    metric1, metric2, metric3, metric4 = st.columns(4)
+    metric1.metric("Plot area", f"{total_plot_area:,.1f} m²")
+    metric2.metric("FSI / FAR", f"{p['fsi']}")
+    metric3.metric("Programmed area", f"{total_prog_area:,.1f} m²")
+    metric4.metric("Floor count", f"{p['num_floors']}")
+
+    info_col1, info_col2 = st.columns([1.25, 1])
+    with info_col1:
+        st.markdown("### Project information")
+        st.markdown(f"""
+        <div class="archi-info-card">
+            <h4>{p['name']}</h4>
+            <p><b>Location:</b> {p['location']}<br>
+            <b>Site dimensions:</b> {p['site_length']} m × {p['site_width']} m<br>
+            <b>Ground coverage limit:</b> {p['ground_coverage_pct']}%<br>
+            <b>Indicative floor area capacity:</b> {max_allowable:,.1f} m²</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with info_col2:
+        st.markdown("### How to use the website")
+        st.markdown("""
+        <div class="archi-info-card">
+            <h4>Simple workflow</h4>
+            <p><b>01</b> Select a planning module from the sidebar.<br>
+            <b>02</b> Enter or update your project values.<br>
+            <b>03</b> Review the calculated results and warnings.<br>
+            <b>04</b> Use the Report Generator to export your information.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.caption(
+        "ARCHI-PLANNER is an educational and preliminary planning aid. "
+        "Always verify project requirements, site information and applicable local regulations independently."
+    )
+
+# ----------------------------------------------------
+# MODULE 1: SITE AREA CALCULATOR
+# ----------------------------------------------------
+
+# ----------------------------------------------------
+elif module == "1. Site Area Calculator":
+
+    st.markdown("## Module 1: Site Area & Building Envelope Calculator")
+
+    st.write(
+        "Configure site boundaries, setbacks, development controls "
+        "(FSI/FAR), and ground coverage to determine the permissible "
+        "building envelope."
+    )
+
+    # ------------------------------------------------
+    # PROJECT AND SITE INPUTS
+    # ------------------------------------------------
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.markdown("### Project & Site Inputs")
+
+        p_name = st.text_input(
+            "Project Name",
+            st.session_state.project_info["name"],
+            key="m1_project_name"
+        )
+
+        p_loc = st.text_input(
+            "Project Location",
+            st.session_state.project_info["location"],
+            key="m1_project_location"
+        )
+
+        site_l = st.number_input(
+            "Site Length (m)",
+            min_value=5.0,
+            max_value=500.0,
+            value=float(st.session_state.project_info["site_length"]),
+            step=1.0,
+            key="m1_site_length"
+        )
+
+        site_w = st.number_input(
+            "Site Width (m)",
+            min_value=5.0,
+            max_value=500.0,
+            value=float(st.session_state.project_info["site_width"]),
+            step=1.0,
+            key="m1_site_width"
+        )
+
+        st.markdown("### Setbacks (m)")
+
+        s_front = st.number_input(
+            "Front Setback",
+            min_value=0.0,
+            max_value=50.0,
+            value=float(st.session_state.project_info["setback_front"]),
+            step=0.5,
+            key="m1_front"
+        )
+
+        s_rear = st.number_input(
+            "Rear Setback",
+            min_value=0.0,
+            max_value=50.0,
+            value=float(st.session_state.project_info["setback_rear"]),
+            step=0.5,
+            key="m1_rear"
+        )
+
+        s_side = st.number_input(
+            "Side Setback",
+            min_value=0.0,
+            max_value=50.0,
+            value=float(st.session_state.project_info["setback_side"]),
+            step=0.5,
+            key="m1_side"
+        )
+
+    # ------------------------------------------------
+    # DEVELOPMENT CONTROLS
+    # ------------------------------------------------
+
+    with col2:
+
+        st.markdown("### Development Controls")
+
+        fsi = st.number_input(
+            "Floor Area Ratio (FAR / FSI)",
+            min_value=0.1,
+            max_value=10.0,
+            value=float(st.session_state.project_info["fsi"]),
+            step=0.1,
+            key="m1_fsi"
+        )
+
+        gc_pct = st.number_input(
+            "Ground Coverage Percentage (%)",
+            min_value=10.0,
+            max_value=100.0,
+            value=float(st.session_state.project_info["ground_coverage_pct"]),
+            step=1.0,
+            key="m1_coverage"
+        )
+
+        floors = st.number_input(
+            "Number of Floors",
+            min_value=1,
+            max_value=50,
+            value=int(st.session_state.project_info["num_floors"]),
+            step=1,
+            key="m1_floors"
+        )
+
+    # ------------------------------------------------
+    # SAVE PROJECT INPUTS
+    # ------------------------------------------------
+
+    st.session_state.project_info.update({
+
+        "name": p_name,
+        "location": p_loc,
+
+        "site_length": site_l,
+        "site_width": site_w,
+
+        "setback_front": s_front,
+        "setback_rear": s_rear,
+        "setback_side": s_side,
+
+        "fsi": fsi,
+        "ground_coverage_pct": gc_pct,
+        "num_floors": floors
+
+    })
+
+    st.markdown("---")
+
+    # ------------------------------------------------
+    # AREA CALCULATIONS
+    # ------------------------------------------------
+
+    st.markdown("### Calculated Results & Building Envelope")
+
+    total_plot_area = site_l * site_w
+
+    permissible_fsi_area = total_plot_area * fsi
+
+    max_ground_coverage_area = (
+        total_plot_area * gc_pct / 100.0
+    )
+
+    # Building envelope after setbacks
+
+    env_length = max(
+        0.0,
+        site_l - s_front - s_rear
+    )
+
+    env_width = max(
+        0.0,
+        site_w - (2 * s_side)
+    )
+
+    envelope_footprint = env_length * env_width
+
+    # Indicative average floor area
+
+    avg_floor_area = (
+        permissible_fsi_area / floors
+        if floors > 0 else 0
+    )
+
+    # ------------------------------------------------
+    # MAXIMUM PERMISSIBLE FOOTPRINT
+    # ------------------------------------------------
+
+    max_permissible_footprint = min(
+        max_ground_coverage_area,
+        envelope_footprint
+    )
+
+    # ------------------------------------------------
+    # PROPOSED BUILDING FOOTPRINT
+    # ------------------------------------------------
+
+    st.markdown("### Proposed Building Footprint")
+
+    st.caption(
+        "Enter the actual proposed ground-floor building area "
+        "to check ground coverage and setback compliance."
+    )
+
+    proposed_footprint = st.number_input(
+        "Proposed Building Footprint (m²)",
+        min_value=0.0,
+        max_value=float(total_plot_area),
+        value=float(max_permissible_footprint),
+        step=10.0,
+        key="m1_proposed_footprint"
+    )
+
+    # ------------------------------------------------
+    # COMPLIANCE CALCULATIONS
+    # ------------------------------------------------
+
+    coverage_compliant = (
+        proposed_footprint <= max_ground_coverage_area
+    )
+
+    setback_compliant = (
+        proposed_footprint <= envelope_footprint
+    )
+
+    overall_compliant = (
+        coverage_compliant and setback_compliant
+    )
+
+    excess_coverage = max(
+        0.0,
+        proposed_footprint - max_ground_coverage_area
+    )
+
+    excess_envelope = max(
+        0.0,
+        proposed_footprint - envelope_footprint
+    )
+
+    # ------------------------------------------------
+    # DISPLAY MAIN RESULTS
+    # ------------------------------------------------
+
+    col_a, col_b, col_c, col_d = st.columns(4)
+
+    col_a.metric(
+        "Total Plot Area",
+        f"{total_plot_area:,.2f} m²"
+    )
+
+    col_b.metric(
+        "Permissible FSI Area",
+        f"{permissible_fsi_area:,.2f} m²"
+    )
+
+    col_c.metric(
+        "Max Ground Coverage",
+        f"{max_ground_coverage_area:,.2f} m²"
+    )
+
+    col_d.metric(
+        "Setback Footprint",
+        f"{envelope_footprint:,.2f} m²"
+    )
+
+    # ------------------------------------------------
+    # PERMISSIBLE BUILDING FOOTPRINT
+    # ------------------------------------------------
+
+    st.markdown("---")
+
+    st.markdown("### Maximum Permissible Building Footprint")
+
+    st.metric(
+        "Maximum Permissible Footprint",
+        f"{max_permissible_footprint:,.2f} m²"
+    )
+
+    # ------------------------------------------------
+    # DETAILED CALCULATION SUMMARY
+    # ------------------------------------------------
+
+    st.markdown("---")
+
+    st.markdown("### Detailed Calculation Summary")
+
+    summary_col1, summary_col2 = st.columns(2)
+
+    with summary_col1:
+
+        st.write(
+            f"**Building Envelope Dimensions:** "
+            f"{env_length:.2f} m × {env_width:.2f} m"
+        )
+
+        st.write(
+            f"**Setback Envelope Area:** "
+            f"{envelope_footprint:,.2f} m²"
+        )
+
+        st.write(
+            f"**Maximum Ground Coverage:** "
+            f"{max_ground_coverage_area:,.2f} m²"
+        )
+
+    with summary_col2:
+
+        st.write(
+            f"**Proposed Building Footprint:** "
+            f"{proposed_footprint:,.2f} m²"
+        )
+
+        st.write(
+            f"**Maximum Permissible Footprint:** "
+            f"{max_permissible_footprint:,.2f} m²"
+        )
+
+        st.write(
+            f"**Indicative Average Floor Area:** "
+            f"{avg_floor_area:,.2f} m² per floor "
+            f"across {int(floors)} floors"
+        )
+
+    # ------------------------------------------------
+    # REGULATORY COMPLIANCE STATUS
+    # ------------------------------------------------
+
+    st.markdown("---")
+
+    st.markdown("### Regulatory Compliance Check")
+
+    if overall_compliant:
+
+        st.success(
+            "PASS: Proposed building footprint is within "
+            "the calculated ground coverage and setback limits."
+        )
+
+        st.write(
+            f"Remaining ground coverage: "
+            f"{max_ground_coverage_area - proposed_footprint:.2f} m²"
+        )
+
+        st.write(
+            f"Remaining setback envelope: "
+            f"{envelope_footprint - proposed_footprint:.2f} m²"
+        )
+
+    else:
+
+        st.error(
+            "FAIL: Proposed building footprint exceeds "
+            "one or more calculated limits."
+        )
+
+        if not coverage_compliant:
+
+            st.warning(
+                f"Ground coverage exceeded by "
+                f"{excess_coverage:.2f} m²."
+            )
+
+        if not setback_compliant:
+
+            st.warning(
+                f"Setback envelope exceeded by "
+                f"{excess_envelope:.2f} m²."
+            )
+
+    # ------------------------------------------------
+    # ADDITIONAL VALIDATION
+    # ------------------------------------------------
+
+    st.markdown("---")
+
+    st.markdown("### Site Geometry Validation")
+
+    if env_length <= 0 or env_width <= 0:
+
+        st.error(
+            "Invalid building envelope. The selected setbacks "
+            "leave no available buildable dimensions."
+        )
+
+    elif envelope_footprint < proposed_footprint:
+
+        st.warning(
+            "The proposed building footprint is larger than "
+            "the available setback envelope."
+        )
+
+    else:
+
+        st.success(
+            "Site dimensions and setback envelope are geometrically valid."
+        )
+
+    st.caption(
+        "Note: These calculations are preliminary planning estimates. "
+        "Actual development permission must be verified against applicable "
+        "local building bye-laws, road width, height restrictions, "
+        "fire safety, parking and other regulatory requirements."
+    )
+
+# ----------------------------------------------------
+
+
+# MODULE 2: SPACE PLANNER & AREA STATEMENT
+# ----------------------------------------------------
+elif module == "2. Space Planner & Area Statement":
+
+    st.markdown("## Module 2: Space Planner & Area Statement")
+
+    st.write(
+        "Manage architectural space programming, categorize zones, "
+        "apply DSA sorting/searching, and compare with available built-up area."
+    )
+
+    # ------------------------------------------
+    # CURRENT AREA STATEMENT
+    # ------------------------------------------
+
+    rooms_df = pd.DataFrame(st.session_state.rooms)
+
+    rooms_df["Total Area"] = (
+        rooms_df["count"] * rooms_df["unit_area"]
+    )
+
+    col_ctrl1, col_ctrl2 = st.columns([2, 1])
+
+    with col_ctrl1:
+        search_query = st.text_input(
+            "🔍 Search Room Name (DSA Linear/Substring Search)",
+            ""
+        )
+
+    with col_ctrl2:
+        sort_order = st.selectbox(
+            "📊 Sort Rooms by Area (DSA Quick/Merge Sort)",
+            [
+                "Descending (Largest First)",
+                "Ascending (Smallest First)"
+            ]
+        )
+
+    # ------------------------------------------
+    # SEARCH FUNCTION
+    # ------------------------------------------
+
+    if search_query:
+        rooms_df = rooms_df[
+            rooms_df["name"].str.contains(
+                search_query,
+                case=False,
+                na=False
+            )
+        ]
+
+    # ------------------------------------------
+    # SORTING FUNCTION
+    # ------------------------------------------
+
+    if "Descending" in sort_order:
+        rooms_df = rooms_df.sort_values(
+            by="Total Area",
+            ascending=False
+        )
+    else:
+        rooms_df = rooms_df.sort_values(
+            by="Total Area",
+            ascending=True
+        )
+
+    # ------------------------------------------
+    # DISPLAY AREA STATEMENT
+    # ------------------------------------------
+
+    st.markdown("### Current Area Statement Table")
+
+    if rooms_df.empty:
+        st.info("No matching room found.")
+    else:
+        st.dataframe(
+            rooms_df,
+            use_container_width=True
+        )
+
+    # ------------------------------------------
+    # MANAGE SPACES
+    # ------------------------------------------
+
+    st.markdown("### Manage Spaces")
+
+    with st.form("add_room_form"):
+
+        c1, c2, c3, c4 = st.columns(4)
+
+        r_name = c1.text_input(
+            "Room Name",
+            "Study Room"
+        )
+
+        r_zone = c2.selectbox(
+            "Zone",
+            ["Public", "Semi-Public", "Private", "Service"]
+        )
+
+        r_count = c3.number_input(
+            "Number of Units",
+            min_value=1,
+            max_value=20,
+            value=1,
+            step=1
+        )
+
+        r_area = c4.number_input(
+            "Unit Area (m²)",
+            min_value=1.0,
+            max_value=500.0,
+            value=15.0,
+            step=0.5
+        )
+
+        submitted = st.form_submit_button(
+            "Add Room to Programme"
+        )
+
+        # ------------------------------------------
+        # VALIDATE AND ADD ROOM
+        # ------------------------------------------
+
+        if submitted:
+
+            # Remove all extra whitespace
+            r_name = " ".join(r_name.split())
+
+            if not r_name:
+
+                st.error("Room name cannot be empty.")
+
+            else:
+
+                st.session_state.rooms.append({
+                    "name": r_name,
+                    "zone": r_zone,
+                    "count": int(r_count),
+                    "unit_area": float(r_area)
+                })
+
+                st.success(
+                    f"Added {r_name} successfully!"
+                )
+
+                st.rerun()
+
+    # ------------------------------------------
+    # DELETE ROOM
+    # ------------------------------------------
+
+    room_names = [
+        r["name"] for r in st.session_state.rooms
+    ]
+
+    if room_names:
+
+        to_delete = st.selectbox(
+            "Select Room to Delete",
+            room_names
+        )
+
+        if st.button("Delete Selected Room"):
+
+            st.session_state.rooms = [
+                r for r in st.session_state.rooms
+                if r["name"] != to_delete
+            ]
+
+            st.success(
+                f"Deleted {to_delete}!"
+            )
+
+            st.rerun()
+
+    # ------------------------------------------
+    # TOTAL PROGRAMMED AREA
+    # ------------------------------------------
+
+    total_programmed = sum(
+        r["count"] * r["unit_area"]
+        for r in st.session_state.rooms
+    )
+
+    # ------------------------------------------
+    # MAXIMUM ALLOWABLE BUILT-UP AREA
+    # ------------------------------------------
+
+    p = st.session_state.project_info
+
+    max_allowable = (
+        p["site_length"] * p["site_width"]
+    ) * (
+        p["ground_coverage_pct"] / 100.0
+    ) * p["num_floors"]
+
+    # ------------------------------------------
+    # SPACE PROGRAMMING VS BUILT-UP CAPACITY
+    # ------------------------------------------
+
+    st.markdown(
+        "### Space Programming vs. Built-Up Capacity"
+    )
+
+    col_m1, col_m2, col_m3 = st.columns(3)
+
+    col_m1.metric(
+        "Total Programmed Area",
+        f"{total_programmed:.2f} m²"
+    )
+
+    col_m2.metric(
+        "Max Allowable Built-up Area",
+        f"{max_allowable:.2f} m²"
+    )
+
+    diff = max_allowable - total_programmed
+
+    col_m3.metric(
+        "Area Variance / Buffer",
+        f"{diff:.2f} m²",
+        delta=f"{'Surplus' if diff >= 0 else 'Deficit'}"
+    )
+
+    # ------------------------------------------
+    # EXPORT AREA STATEMENT AS CSV
+    # ------------------------------------------
+
+    csv_data = rooms_df.to_csv(
+        index=False
+    ).encode("utf-8")
+
+    st.download_button(
+        "📥 Export Area Statement as CSV",
+        data=csv_data,
+        file_name="area_statement.csv",
+        mime="text/csv"
+    )
+
+# ----------------------------------------------------
+
+# MODULE 3: PARKING PLANNER
+# ----------------------------------------------------
+elif module == "3. Parking Planner":
+
+    st.markdown("## Module 3: Parking Estimation & Circulation Planner")
+
+    st.write(
+        "Calculate car and two-wheeler parking bay requirements, "
+        "circulation driveways, ramp allowances, and total parking "
+        "footprint based on local standards."
+    )
+
+    # ------------------------------------------
+    # VEHICLE COUNTS & PARKING BAY INPUTS
+    # ------------------------------------------
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.markdown("### Vehicle Counts & Bays")
+
+        cars = st.number_input(
+            "Number of Cars",
+            min_value=0,
+            max_value=200,
+            value=int(st.session_state.parking["cars"]),
+            step=1
+        )
+
+        twos = st.number_input(
+            "Number of Two-Wheelers",
+            min_value=0,
+            max_value=500,
+            value=int(st.session_state.parking["two_wheelers"]),
+            step=1
+        )
+
+        # Accessible spaces cannot exceed car spaces
+        acc = st.number_input(
+            "Accessible Parking Spaces",
+            min_value=0,
+            max_value=int(cars),
+            value=min(
+                int(st.session_state.parking["accessible"]),
+                int(cars)
+            ),
+            step=1
+        )
+
+        car_area = st.number_input(
+            "Area per Car Bay (m²)",
+            min_value=10.0,
+            max_value=30.0,
+            value=float(st.session_state.parking["car_bay_area"]),
+            step=0.25
+        )
+
+        two_area = st.number_input(
+            "Area per Two-Wheeler Bay (m²)",
+            min_value=1.0,
+            max_value=10.0,
+            value=float(st.session_state.parking["two_wheeler_area"]),
+            step=0.25
+        )
+
+        acc_area = st.number_input(
+            "Area per Accessible Bay (m²)",
+            min_value=10.0,
+            max_value=40.0,
+            value=float(st.session_state.parking["accessible_area"]),
+            step=0.5
+        )
+
+    # ------------------------------------------
+    # CIRCULATION & SERVICE ALLOWANCES
+    # ------------------------------------------
+
+    with col2:
+
+        st.markdown("### Circulation & Service Allowances")
+
+        circ_pct = st.number_input(
+            "Driveway & Circulation Allowance (%)",
+            min_value=10.0,
+            max_value=100.0,
+            value=float(st.session_state.parking["circulation_pct"]),
+            step=1.0
+        )
+
+        ramp_pct = st.number_input(
+            "Ramp / Basement Service Allowance (%)",
+            min_value=0.0,
+            max_value=100.0,
+            value=float(st.session_state.parking["ramp_allowance"]),
+            step=1.0
+        )
+
+    # ------------------------------------------
+    # UPDATE PARKING SESSION DATA
+    # ------------------------------------------
+
+    st.session_state.parking.update({
+        "cars": int(cars),
+        "two_wheelers": int(twos),
+        "accessible": int(acc),
+        "car_bay_area": float(car_area),
+        "two_wheeler_area": float(two_area),
+        "accessible_area": float(acc_area),
+        "circulation_pct": float(circ_pct),
+        "ramp_allowance": float(ramp_pct)
+    })
+
+    # ------------------------------------------
+    # PARKING AREA CALCULATIONS
+    # ------------------------------------------
+
+    # Regular car spaces
+    regular_cars = int(cars) - int(acc)
+
+    car_total = regular_cars * car_area
+
+    # Accessible parking spaces
+    acc_total = int(acc) * acc_area
+
+    # Two-wheeler parking spaces
+    two_total = int(twos) * two_area
+
+    # Total base parking area
+    base_parking = (
+        car_total + acc_total + two_total
+    )
+
+    # Circulation and driveway allowance
+    circulation_area = (
+        base_parking * (circ_pct / 100.0)
+    )
+
+    # Ramp and basement service allowance
+    ramp_area = (
+        (base_parking + circulation_area)
+        * (ramp_pct / 100.0)
+    )
+
+    # Total parking footprint
+    total_parking_footprint = (
+        base_parking + circulation_area + ramp_area
+    )
+
+    # ------------------------------------------
+    # PARKING SUMMARY
+    # ------------------------------------------
+
+    st.markdown("---")
+
+    st.markdown("### Parking Summary & Breakdown")
+
+    m1, m2, m3, m4 = st.columns(4)
+
+    m1.metric(
+        "Base Bay Area",
+        f"{base_parking:.2f} m²"
+    )
+
+    m2.metric(
+        "Circulation / Driveways",
+        f"{circulation_area:.2f} m²"
+    )
+
+    m3.metric(
+        "Ramp / Basement Allowance",
+        f"{ramp_area:.2f} m²"
+    )
+
+    m4.metric(
+        "Total Parking Footprint",
+        f"{total_parking_footprint:.2f} m²"
+    )
+
+    # ------------------------------------------
+    # PARKING AREA BREAKDOWN CHART
+    # ------------------------------------------
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    categories = [
+        "Car Bays",
+        "Accessible Bays",
+        "Two-Wheeler Bays",
+        "Circulation",
+        "Ramp Allowance"
+    ]
+
+    values = [
+        car_total,
+        acc_total,
+        two_total,
+        circulation_area,
+        ramp_area
+    ]
+
+    colors_list = [
+        "#3498DB",
+        "#9B59B6",
+        "#1ABC9C",
+        "#F1C40F",
+        "#E74C3C"
+    ]
+
+    ax.barh(
+        categories,
+        values,
+        color=colors_list
+    )
+
+    ax.set_xlabel("Area in m²")
+    ax.set_title("Parking Area Breakdown")
+
+    st.pyplot(fig)
+
+# ----------------------------------------------------
+
+# MODULE 4: SITE ZONING & DISTRIBUTION
+# ----------------------------------------------------
+elif module == "4. Site Zoning & Distribution":
+
+    st.markdown("## Module 4: Conceptual Site Zoning & Distribution")
+    st.write(
+        "Generate proportional conceptual site zoning layouts "
+        "based on percentage area allocations for buildings, "
+        "parking, landscaping, and open circulation."
+    )
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        b_pct = st.number_input(
+            "Building Footprint Zone (%)",
+            min_value=10.0,
+            max_value=80.0,
+            value=float(st.session_state.zoning["building_pct"]),
+            step=1.0
+        )
+
+        p_pct = st.number_input(
+            "Parking Zone (%)",
+            min_value=5.0,
+            max_value=50.0,
+            value=float(st.session_state.zoning["parking_pct"]),
+            step=1.0
+        )
+
+        l_pct = st.number_input(
+            "Landscape & Green Zone (%)",
+            min_value=5.0,
+            max_value=50.0,
+            value=float(st.session_state.zoning["landscape_pct"]),
+            step=1.0
+        )
+
+        total_pct = b_pct + p_pct + l_pct
+
+        entrance = st.selectbox(
+            "Main Access / Entrance Direction",
+            ["North", "South", "East", "West"],
+            index=["North", "South", "East", "West"].index(
+                st.session_state.zoning.get("entrance_dir", "North")
+            )
+        )
+
+        if total_pct > 100:
+            open_pct = 0.0
+
+            st.session_state.zoning.update({
+                "building_pct": b_pct,
+                "parking_pct": p_pct,
+                "landscape_pct": l_pct,
+                "open_pct": open_pct,
+                "entrance_dir": entrance
+            })
+
+            st.error(
+                f"Invalid allocation! Total zone allocation is "
+                f"{total_pct:.1f}%. It cannot exceed 100%. "
+                f"Please reduce the percentages by {total_pct - 100:.1f}%."
+            )
+
+        else:
+            open_pct = 100.0 - total_pct
+
+            st.info(
+                f"Open Circulation & Paved Spaces "
+                f"(Auto-calculated remainder): {open_pct:.1f}%"
+            )
+
+            st.session_state.zoning.update({
+                "building_pct": b_pct,
+                "parking_pct": p_pct,
+                "landscape_pct": l_pct,
+                "open_pct": open_pct,
+                "entrance_dir": entrance
+            })
+
+    if total_pct <= 100:
+
+        with c2:
+            st.markdown("### Zone Area Distribution")
+
+            p = st.session_state.project_info
+            total_site = p["site_length"] * p["site_width"]
+
+            b_area = total_site * (b_pct / 100.0)
+            p_area = total_site * (p_pct / 100.0)
+            l_area = total_site * (l_pct / 100.0)
+            o_area = total_site * (open_pct / 100.0)
+
+            st.markdown(f"""
+            - **Total Site Area:** {total_site:.2f} m²
+            - **Building Footprint Area:** {b_area:.2f} m² ({b_pct:.1f}%)
+            - **Parking Zone Area:** {p_area:.2f} m² ({p_pct:.1f}%)
+            - **Landscape / Green Area:** {l_area:.2f} m² ({l_pct:.1f}%)
+            - **Open Circulation / Paved Area:** {o_area:.2f} m² ({open_pct:.1f}%)
+            - **Main Access Direction:** {entrance}
+            """)
+
+        st.markdown("### Conceptual Zoning Diagram")
+
+        fig, ax = plt.subplots(figsize=(7, 6))
+
+        labels = [
+            'Building Footprint',
+            'Parking',
+            'Landscape / Green',
+            'Open Circulation'
+        ]
+
+        sizes = [b_pct, p_pct, l_pct, open_pct]
+
+        colors = [
+            '#2C3E50',
+            '#E74C3C',
+            '#27AE60',
+            '#F39C12'
+        ]
+
+        wedges, texts, autotexts = ax.pie(
+            sizes,
+            labels=labels,
+            colors=colors,
+            autopct='%1.1f%%',
+            startangle=140,
+            textprops=dict(color="black")
+        )
+
+        plt.setp(autotexts, size=10, weight="bold")
+
+        ax.set_title(
+            f"Conceptual Site Zoning Layout "
+            f"(Main Entrance: {entrance})",
+            fontsize=12,
+            pad=20
+        )
+
+        st.pyplot(fig)
+        
+# ----------------------------------------------------
+
+# MODULE 5: REPORT GENERATOR
+# ----------------------------------------------------
+
+elif module == "5. Report Generator":
+
+    st.markdown("## Module 5: Architectural Report Generator")
+
+    st.write(
+        "Combine project information, area statement, parking and "
+        "site zoning into a downloadable Excel report."
+    )
+
+    # --------------------------------
+    # GET PROJECT DATA
+    # --------------------------------
+
+    p = st.session_state.project_info
+    rooms_df = pd.DataFrame(st.session_state.rooms)
+
+    rooms_df["Total Area"] = (
+        rooms_df["count"] * rooms_df["unit_area"]
+    )
+
+    parking = st.session_state.parking
+    zoning = st.session_state.zoning
+
+    project_df = pd.DataFrame([p])
+    parking_df = pd.DataFrame([parking])
+    zoning_df = pd.DataFrame([zoning])
+
+    # --------------------------------
+    # PROJECT SUMMARY
+    # --------------------------------
+
+    st.markdown("### Project Summary")
+
+    st.write(f"**Project:** {p['name']}")
+    st.write(f"**Location:** {p['location']}")
+
+    total_site_area = p["site_length"] * p["site_width"]
+    st.write(f"**Site Area:** {total_site_area:.2f} m²")
+    st.write(f"**Site Dimensions:** {p['site_length']} m × {p['site_width']} m")
+    st.write(f"**FSI / FAR:** {p['fsi']}")
+    st.write(f"**Number of Floors:** {p['num_floors']}")
+
+    # --------------------------------
+    # AREA STATEMENT PREVIEW
+    # --------------------------------
+
+    st.markdown("### Area Statement Preview")
+
+    st.dataframe(
+        rooms_df,
+        use_container_width=True
+    )
+
+    total_area = rooms_df["Total Area"].sum()
+
+    st.metric(
+        "Total Programmed Area",
+        f"{total_area:.2f} m²"
+    )
+
+    # --------------------------------
+    # PARKING SUMMARY
+    # --------------------------------
+
+    st.markdown("### Parking Information")
+
+    parking_base_area = (
+        (parking["cars"] - parking["accessible"]) * parking["car_bay_area"]
+        + parking["accessible"] * parking["accessible_area"]
+        + parking["two_wheelers"] * parking["two_wheeler_area"]
+    )
+    parking_circulation = (
+        parking_base_area * parking["circulation_pct"] / 100.0
+    )
+    parking_ramp = (
+        (parking_base_area + parking_circulation)
+        * parking["ramp_allowance"] / 100.0
+    )
+    parking_total = parking_base_area + parking_circulation + parking_ramp
+
+    park1, park2, park3 = st.columns(3)
+    park1.metric("Cars", f"{parking['cars']}")
+    park2.metric("Two-Wheelers", f"{parking['two_wheelers']}")
+    park3.metric("Total Parking Area", f"{parking_total:.2f} m²")
+
+    # --------------------------------
+    # SITE ZONING SUMMARY
+    # --------------------------------
+
+    st.markdown("### Site Zoning Preview")
+
+    zoning_total = (
+        zoning["building_pct"]
+        + zoning["parking_pct"]
+        + zoning["landscape_pct"]
+        + zoning["open_pct"]
+    )
+
+    zone1, zone2, zone3, zone4 = st.columns(4)
+    zone1.metric("Building", f"{zoning['building_pct']:.1f}%")
+    zone2.metric("Parking", f"{zoning['parking_pct']:.1f}%")
+    zone3.metric("Landscape", f"{zoning['landscape_pct']:.1f}%")
+    zone4.metric("Open Area", f"{zoning['open_pct']:.1f}%")
+
+    st.caption(
+        f"Main entrance direction: {zoning['entrance_dir']} | "
+        f"Total zoning allocation: {zoning_total:.1f}%"
+    )
+
+    # --------------------------------
+    # EXCEL REPORT GENERATION
+    # --------------------------------
+
+    st.markdown("### Export Complete Project Report")
+
+    excel_buffer = io.BytesIO()
+
+    with pd.ExcelWriter(
+        excel_buffer,
+        engine="openpyxl"
+    ) as writer:
+
+        project_df.to_excel(
+            writer,
+            sheet_name="Project Details",
+            index=False
+        )
+
+        rooms_df.to_excel(
+            writer,
+            sheet_name="Area Statement",
+            index=False
+        )
+
+        parking_df.to_excel(
+            writer,
+            sheet_name="Parking",
+            index=False
+        )
+
+        zoning_df.to_excel(
+            writer,
+            sheet_name="Site Zoning",
+            index=False
+        )
+
+    st.download_button(
+        label="Download Complete Excel Report",
+        data=excel_buffer.getvalue(),
+        file_name="ARCHI_PLANNER_Report.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    st.success(
+        "Your complete project report is ready to download."
+    )
