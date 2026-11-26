@@ -1369,7 +1369,7 @@ elif module == "4. Site Zoning & Distribution":
         
 # ----------------------------------------------------
 
-# MODULE 5: REPORT GENERATOR
+# MODULE 6: REPORT GENERATOR
 # ----------------------------------------------------
 
 elif module == "6. Report Generator":
