@@ -264,8 +264,7 @@ module = st.sidebar.radio(
         "2. Space Planner & Area Statement",
         "3. Parking Planner",
         "4. Site Zoning & Distribution",
-        "5. Sun Path & Orientation",
-        "6. Report Generator"
+        "5. Report Generator"
     ]
 )
 
